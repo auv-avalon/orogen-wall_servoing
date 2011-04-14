@@ -61,6 +61,11 @@ void Task::updateHook()
         
     }
     
+    base::Vector3d vec = sonarPlugin->getVirtualPoint();
+    if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
+    {
+        _virtual_point.write(vec);
+    }
 }
 void Task::errorHook()
 {

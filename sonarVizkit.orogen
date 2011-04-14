@@ -18,7 +18,7 @@ end
 
 
 deployment "sonarVizkit_test" do
-    do_not_install
+    #do_not_install
 
     task("sonarvizkit", "Task")
 end
