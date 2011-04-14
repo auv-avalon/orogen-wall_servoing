@@ -1,0 +1,25 @@
+name "sonarvizkit"
+
+import_types_from "base"
+import_types_from "avalon_base"
+using_library "sonarbeamviz"
+using_library "vizkit"
+
+task_context "Task" do
+
+     input_port "sonar_input", 'base::samples::SonarScan'
+	 input_port "ground_distance_input", 'base::samples::LaserScan'
+	 input_port "body_state", 'base::samples::RigidBodyState'
+
+	 output_port "virtual_point", 'base::Vector3d'
+
+	 port_driven "sonar_input"
+end
+
+
+deployment "sonarVizkit_test" do
+    do_not_install
+
+    task("sonarvizkit", "Task")
+end
+
