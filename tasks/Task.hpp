@@ -1,14 +1,14 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.hpp */
 
-#ifndef SONARVIZKIT_TASK_TASK_HPP
-#define SONARVIZKIT_TASK_TASK_HPP
+#ifndef SONARDETECTOR_TASK_TASK_HPP
+#define SONARDETECTOR_TASK_TASK_HPP
 
-#include "sonarvizkit/TaskBase.hpp"
+#include "sonardetector/TaskBase.hpp"
 #include <vizkit/QVizkitWidget.hpp>
 #include <vizkit/SonarBeamVisualization.hpp>
 #include <vizkit/QtThreadedWidget.hpp>
 
-namespace sonarvizkit {
+namespace sonardetector {
     class Task : public TaskBase
     {
 	friend class TaskBase;
@@ -18,7 +18,7 @@ namespace sonarvizkit {
         vizkit::SonarBeamVisualization* sonarPlugin;
 
     public:
-        Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);
+        Task(std::string const& name = "sonarvizkit::Task");
 
 	~Task();
 

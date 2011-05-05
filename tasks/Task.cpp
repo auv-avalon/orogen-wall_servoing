@@ -2,10 +2,10 @@
 
 #include "Task.hpp"
 
-using namespace sonarvizkit;
+using namespace sonardetector;
 
-Task::Task(std::string const& name, TaskCore::TaskState initial_state)
-    : TaskBase(name, initial_state)
+Task::Task(std::string const& name)
+    : TaskBase(name)
 {
     app.start();
     vizkitWidget = app.getWidget();
