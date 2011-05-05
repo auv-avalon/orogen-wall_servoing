@@ -16,6 +16,8 @@ namespace sonardetector {
         QtThreadedWidget<vizkit::QVizkitWidget > app;
         vizkit::QVizkitWidget* vizkitWidget;
         vizkit::SonarBeamVisualization* sonarPlugin;
+        avalon::SonarBeamProcessing* processing;
+        bool use_visualization;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task");

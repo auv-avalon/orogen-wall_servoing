@@ -7,10 +7,6 @@ using namespace sonardetector;
 Task::Task(std::string const& name)
     : TaskBase(name)
 {
-    app.start();
-    vizkitWidget = app.getWidget();
-    sonarPlugin = new vizkit::SonarBeamVisualization();
-    vizkitWidget->addDataHandler(sonarPlugin);
 }
 
 Task::~Task()
@@ -25,15 +21,24 @@ Task::~Task()
 
 bool Task::configureHook()
 {
-    if (! TaskBase::configureHook())
-        return false;
-    
-    base::samples::RigidBodyState state;
-    state.invalidate();
-    state.position(2,0) = 2;
-    state.cov_position = Eigen::Matrix3d::Identity();
-    sonarPlugin->updateData(state);
-    vizkitWidget->changeCameraView(osg::Vec3d(0,0,2), osg::Vec3d(-5,0,4));
+    if(_use_visualization.get())
+    {
+        use_visualization = true;
+        app.start();
+        vizkitWidget = app.getWidget();
+        sonarPlugin = new vizkit::SonarBeamVisualization();
+        vizkitWidget->addDataHandler(sonarPlugin);
+        vizkitWidget->changeCameraView(osg::Vec3d(0,0,0), osg::Vec3d(-5,0,2));
+    }
+    else
+    {
+        use_visualization = false;
+        processing = new avalon::SonarBeamProcessing(avalon::globalMaximum, avalon::persistNewScans);
+        processing->setBeamThreshold(0.5, 5);
+        processing->enableBeamThreshold(true);
+        processing->enableWallEstimation(true);
+        processing->setMinResponseValue(10);
+    }
     
     return true;
 }
@@ -46,14 +51,23 @@ bool Task::startHook()
 void Task::updateHook()
 {
     base::samples::SonarScan sonarScan;
-    if (_sonar_input.connected() && _sonar_input.read(sonarScan) == RTT::NewData) 
+    while (_sonar_input.connected() && _sonar_input.read(sonarScan) == RTT::NewData) 
     {
-        sonarPlugin->updateData(sonarScan);
+        if(use_visualization)
+            sonarPlugin->updateData(sonarScan);
+        else
+            processing->updateSonarData(sonarScan);
     }
     base::samples::RigidBodyState bodyState;
-    if (_body_state.connected() && _body_state.read(bodyState) == RTT::NewData) 
+    if (_body_state.connected() && _body_state.readNewest(bodyState) == RTT::NewData) 
     {
-        sonarPlugin->updateData(bodyState);
+        if(use_visualization)
+            sonarPlugin->updateData(bodyState);
+        else
+        {
+            processing->updatePosition(bodyState.position);
+            processing->updateOrientation(bodyState.orientation);
+        }
     }
     base::samples::LaserScan laserScan;
     if (_ground_distance_input.connected() && _ground_distance_input.read(laserScan) == RTT::NewData) 
@@ -61,7 +75,11 @@ void Task::updateHook()
         
     }
     
-    base::Vector3d vec = sonarPlugin->getVirtualPoint();
+    base::Vector3d vec;
+    if (use_visualization)
+        vec = sonarPlugin->getVirtualPoint();
+    else
+        vec = processing->getVirtualPoint();
     if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
     {
         _virtual_point.write(vec);
@@ -77,6 +95,9 @@ void Task::stopHook()
 }
 void Task::cleanupHook()
 {
-    TaskBase::cleanupHook();
+    if (sonarPlugin)
+        delete sonarPlugin;
+    if (processing)
+        delete processing;
 }
 
