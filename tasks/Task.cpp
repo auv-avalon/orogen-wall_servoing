@@ -24,11 +24,11 @@ bool Task::configureHook()
     if(_use_visualization.get())
     {
         use_visualization = true;
-        app.start();
-        vizkitWidget = app.getWidget();
-        sonarPlugin = new vizkit::SonarBeamVisualization();
-        vizkitWidget->addDataHandler(sonarPlugin);
-        vizkitWidget->changeCameraView(osg::Vec3d(0,0,0), osg::Vec3d(-5,0,2));
+        //app.start();
+        //vizkitWidget = app.getWidget();
+        //sonarPlugin = new vizkit::SonarBeamVisualization();
+        //vizkitWidget->addDataHandler(sonarPlugin);
+        //vizkitWidget->changeCameraView(osg::Vec3d(0,0,0), osg::Vec3d(-5,0,2));
     }
     else
     {
@@ -53,16 +53,16 @@ void Task::updateHook()
     base::samples::SonarScan sonarScan;
     while (_sonar_input.connected() && _sonar_input.read(sonarScan) == RTT::NewData) 
     {
-        if(use_visualization)
-            sonarPlugin->updateData(sonarScan);
+        if(use_visualization);
+            //sonarPlugin->updateData(sonarScan);
         else
             processing->updateSonarData(sonarScan);
     }
     base::samples::RigidBodyState bodyState;
     if (_body_state.connected() && _body_state.readNewest(bodyState) == RTT::NewData) 
     {
-        if(use_visualization)
-            sonarPlugin->updateData(bodyState);
+        if(use_visualization);
+            //sonarPlugin->updateData(bodyState);
         else
         {
             processing->updatePosition(bodyState.position);
@@ -76,8 +76,8 @@ void Task::updateHook()
     }
     
     base::Vector3d vec;
-    if (use_visualization)
-        vec = sonarPlugin->getVirtualPoint();
+    if (use_visualization);
+        //vec = sonarPlugin->getVirtualPoint();
     else
         vec = processing->getVirtualPoint();
     if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
@@ -95,8 +95,8 @@ void Task::stopHook()
 }
 void Task::cleanupHook()
 {
-    if (sonarPlugin)
-        delete sonarPlugin;
+    //if (sonarPlugin)
+        //delete sonarPlugin;
     if (processing)
         delete processing;
 }
