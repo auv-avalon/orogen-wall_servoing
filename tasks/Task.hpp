@@ -4,7 +4,7 @@
 #define SONARDETECTOR_TASK_TASK_HPP
 
 #include "sonardetector/TaskBase.hpp"
-#include <vizkit/SonarBeamProcessing.hpp>
+#include <sonar_detectors/SonarBeamProcessing.hpp>
 
 namespace sonardetector {
     class Task : public TaskBase

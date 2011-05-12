@@ -2,8 +2,7 @@ name "sonardetector"
 
 import_types_from "base"
 import_types_from "avalon_base"
-using_library "sonarbeamviz"
-using_library "vizkit"
+using_library "sonar_detectors"
 
 task_context "Task" do
 
