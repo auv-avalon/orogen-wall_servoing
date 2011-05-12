@@ -14,7 +14,7 @@ namespace sonardetector {
         avalon::SonarBeamProcessing* processing;
 
     public:
-        Task(std::string const& name = "sonarvizkit::Task");
+        Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);
 
 	~Task();
 

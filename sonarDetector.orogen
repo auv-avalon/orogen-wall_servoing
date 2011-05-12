@@ -6,15 +6,27 @@ using_library "sonarbeamviz"
 using_library "vizkit"
 
 task_context "Task" do
-    needs_configuration
 
-     input_port "sonar_input", 'base::samples::SonarScan'
-	 input_port "ground_distance_input", 'base::samples::LaserScan'
-	 input_port "body_state", 'base::samples::RigidBodyState'
+    property("enable_beam_threshold","bool",true).
+        doc("if set to true the threshold for the sonar beams is enabled")
+    property("beam_threshold_min","double", 0.5).
+        doc("minimum distance for sonar responses in a beam")
+    property("beam_threshold_max","double", 5).
+        doc("maximum distance for sonar responses in a beam")
 
-	 output_port "virtual_point", 'base::Vector3d'
+    property("enable_wall_estimation","bool",true).
+        doc("if set to true the detector trys to estimate a wall")
 
-	 port_driven "sonar_input"
+    property("min_response_value","double",10).
+        doc("minimum value for responses in a beam, everything below will be ignored")
+    
+    input_port "sonar_input", 'base::samples::SonarScan'
+    input_port "ground_distance_input", 'base::samples::LaserScan'
+    input_port "body_state", 'base::samples::RigidBodyState'
+
+    output_port "virtual_point", 'base::Vector3d'
+
+    port_driven "sonar_input"
 end
 
 

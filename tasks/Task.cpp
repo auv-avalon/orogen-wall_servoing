@@ -4,8 +4,8 @@
 
 using namespace sonardetector;
 
-Task::Task(std::string const& name)
-    : TaskBase(name)
+Task::Task(std::string const& name, TaskCore::TaskState initial_state)
+    : TaskBase(name, initial_state)
 {
 }
 
@@ -26,10 +26,26 @@ bool Task::configureHook()
 bool Task::startHook()
 {
     processing = new avalon::SonarBeamProcessing(avalon::globalMaximum, avalon::persistNewScans);
-    processing->setBeamThreshold(0.5, 5);
-    processing->enableBeamThreshold(true);
-    processing->enableWallEstimation(true);
-    processing->setMinResponseValue(10);
+    double beam_threshold_min = _beam_threshold_min.get();
+    double beam_threshold_max = _beam_threshold_max.get();
+    double min_response_value = _min_response_value.get();
+    
+    if (beam_threshold_min < 0 || beam_threshold_max < 0 || beam_threshold_min >= beam_threshold_max)
+    {
+        std::cerr << "The sonar beam thresholds shouldn't be smaller then 0 and the "
+                     << "maximum threshold should be greater than the minimum one." << std::endl;
+        return false;
+    }
+    if (min_response_value < 0) 
+    {
+        std::cerr << "The minimum response value has to be greater than 0!" << std::endl;
+        return false;
+    }
+    
+    processing->setBeamThreshold(beam_threshold_min, beam_threshold_max);
+    processing->enableBeamThreshold(_enable_beam_threshold.get());
+    processing->enableWallEstimation(_enable_wall_estimation.get());
+    processing->setMinResponseValue((unsigned int)min_response_value);
     return true;
 }
 void Task::updateHook()
