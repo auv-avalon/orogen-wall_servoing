@@ -14,9 +14,6 @@ task_context "Task" do
 
 	 output_port "virtual_point", 'base::Vector3d'
 
-        property("use_visualization","bool",true).
-        doc("Iif set to true the vizkit plugin will be used to show the visualization")
-
 	 port_driven "sonar_input"
 end
 

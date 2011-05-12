@@ -4,9 +4,6 @@
 #define SONARDETECTOR_TASK_TASK_HPP
 
 #include "sonardetector/TaskBase.hpp"
-//#include <vizkit/QVizkitWidget.hpp>
-//#include <vizkit/SonarBeamVisualization.hpp>
-//#include <vizkit/QtThreadedWidget.hpp>
 #include <vizkit/SonarBeamProcessing.hpp>
 
 namespace sonardetector {
@@ -14,11 +11,7 @@ namespace sonardetector {
     {
 	friend class TaskBase;
     protected:
-        //QtThreadedWidget<vizkit::QVizkitWidget > app;
-        //vizkit::QVizkitWidget* vizkitWidget;
-        //vizkit::SonarBeamVisualization* sonarPlugin;
         avalon::SonarBeamProcessing* processing;
-        bool use_visualization;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task");

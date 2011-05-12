@@ -1,5 +1,5 @@
 <package>
-  <description brief="Visualization of the sonar data using vizkit">
+  <description brief="Using the sonar detector librarys to estimate the positions of objects.">
   
   </description>
   <author>Sascha Arnold/sirius@tzi.de</author>
