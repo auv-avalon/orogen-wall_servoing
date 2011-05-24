@@ -5,6 +5,7 @@
 
 #include "sonardetector/TaskBase.hpp"
 #include <sonar_detectors/SonarBeamProcessing.hpp>
+#include <sonar_detectors/WallEstimation.hpp>
 
 namespace sonardetector {
     class Task : public TaskBase
@@ -12,6 +13,7 @@ namespace sonardetector {
 	friend class TaskBase;
     protected:
         avalon::SonarBeamProcessing* processing;
+        avalon::WallEstimation* wallEstimation;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);

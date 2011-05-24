@@ -15,6 +15,10 @@ task_context "Task" do
 
     property("enable_wall_estimation","bool",true).
         doc("if set to true the detector trys to estimate a wall")
+    property("wall_estimation_start_angle","double", 2.35619).
+        doc("start angle for the wall estimation")
+    property("wall_estimation_end_angle","double", 3.92699).
+        doc("end angle for the wall estimation")
 
     property("min_response_value","double",10).
         doc("minimum value for responses in a beam, everything below will be ignored")
