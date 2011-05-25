@@ -87,7 +87,7 @@ void Task::updateHook()
     
     if (_enable_wall_estimation.get())
     {
-        base::Vector3d vec = wallEstimation->getVirtualPoint();
+        base::Vector3d vec = wallEstimation->getRelativeVirtualPoint();
         if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
         {
             _virtual_point.write(vec);
@@ -106,5 +106,7 @@ void Task::cleanupHook()
 {
     if (processing)
         delete processing;
+    if (wallEstimation)
+        delete wallEstimation;
 }
 
