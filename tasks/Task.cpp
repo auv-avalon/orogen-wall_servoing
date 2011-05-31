@@ -54,16 +54,15 @@ bool Task::startHook()
     processing->setBeamThreshold(beam_threshold_min, beam_threshold_max);
     processing->enableBeamThreshold(_enable_beam_threshold.get());
     processing->setMinResponseValue(min_response_value);
-    if(_enable_wall_estimation.get())
-    {
-        wallEstimation = new avalon::WallEstimation();
-        avalon::estimationSettings settings;
-        settings.segMode = avalon::forEachEdge;
-        settings.startAngle = wall_estimation_start_angle;
-        settings.endAngle = wall_estimation_end_angle;
-        wallEstimation->setSettings(settings);
-        processing->addSonarEstimation(wallEstimation);
-    }
+
+    wallEstimation = new avalon::WallEstimation();
+    avalon::estimationSettings settings;
+    settings.segMode = avalon::forEachEdge;
+    settings.startAngle = wall_estimation_start_angle;
+    settings.endAngle = wall_estimation_end_angle;
+    wallEstimation->setSettings(settings);
+    processing->addSonarEstimation(wallEstimation);
+
     return true;
 }
 void Task::updateHook()
@@ -79,19 +78,11 @@ void Task::updateHook()
         processing->updatePosition(bodyState.position);
         processing->updateOrientation(bodyState.orientation);
     }
-    base::samples::LaserScan laserScan;
-    if (_ground_distance_input.connected() && _ground_distance_input.read(laserScan) == RTT::NewData) 
-    {
-        
-    }
     
-    if (_enable_wall_estimation.get())
+    base::Vector3d vec = wallEstimation->getRelativeVirtualPoint();
+    if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
     {
-        base::Vector3d vec = wallEstimation->getRelativeVirtualPoint();
-        if (!(vec.x() == 0 && vec.y() == 0 && vec.z() == 0))
-        {
-            _virtual_point.write(vec);
-        }
+        _virtual_point.write(vec);
     }
 }
 void Task::errorHook()
