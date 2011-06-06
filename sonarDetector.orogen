@@ -20,11 +20,18 @@ task_context "Task" do
 
     property("min_response_value","double",10).
         doc("minimum value for responses in a beam, everything below will be ignored")
+
+    property("wall_distance", 'double', 2).
+        doc("reference distance to wall")
+
+    property("fixed_depth", 'double', -1).
+        doc("reference depth")
     
     input_port "sonar_input", 'base::samples::SonarScan'
     input_port "body_state", 'base::samples::RigidBodyState'
 
-    output_port "virtual_point", 'base::Vector3d'
+    output_port('position_command', '/base/AUVPositionCommand').
+        doc("relativ target position and heading")
 
     port_driven "sonar_input"
 end

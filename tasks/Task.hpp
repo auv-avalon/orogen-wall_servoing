@@ -14,6 +14,8 @@ namespace sonardetector {
     protected:
         avalon::SonarBeamProcessing* processing;
         avalon::WallEstimation* wallEstimation;
+        base::samples::RigidBodyState actualBodyState;
+        bool validBodyState;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);
@@ -33,7 +35,7 @@ namespace sonardetector {
          *     ...
          *   end
          */
-        bool configureHook();
+        // bool configureHook();
 
         /** This hook is called by Orocos when the state machine transitions
          * from Stopped to Running. If it returns false, then the component will
