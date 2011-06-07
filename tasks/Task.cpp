@@ -79,6 +79,14 @@ bool Task::startHook()
     settings.endAngle = wall_estimation_end_angle;
     wallEstimation->setSettings(settings);
     processing->addSonarEstimation(wallEstimation);
+    
+    distanceEstimation = new avalon::DistanceEstimation();
+    avalon::estimationSettings dist_settings;
+    dist_settings.segMode = avalon::forEachBeam;
+    dist_settings.startAngle = wall_estimation_start_angle;
+    dist_settings.endAngle = wall_estimation_end_angle;
+    distanceEstimation->setSettings(dist_settings);
+    processing->addSonarEstimation(distanceEstimation);
 
     return true;
 }
@@ -130,9 +138,11 @@ void Task::updateHook()
             positionCommand.heading = heading + delta_rad;
         }
         
-        // calculate new distance
-        if (relativeWallPos.x() > 0)
-            positionCommand.x = relativeWallPos.x() - _wall_distance.get();
+        // calculate new x
+        double distance_to_wall = distanceEstimation->getActualDistance();
+        // (maybe use relativeWallPos.x() for average here)
+        if (distance_to_wall > 0)
+            positionCommand.x = distance_to_wall - _wall_distance.get();
         else
             positionCommand.x = 0;
         
@@ -158,6 +168,8 @@ void Task::cleanupHook()
     if (processing)
         delete processing;
     if (wallEstimation)
+        delete wallEstimation;
+    if (distanceEstimation)
         delete wallEstimation;
 }
 

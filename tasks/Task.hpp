@@ -6,6 +6,7 @@
 #include "sonardetector/TaskBase.hpp"
 #include <sonar_detectors/SonarBeamProcessing.hpp>
 #include <sonar_detectors/WallEstimation.hpp>
+#include <sonar_detectors/DistanceEstimation.hpp>
 
 namespace sonardetector {
     class Task : public TaskBase
@@ -14,6 +15,7 @@ namespace sonardetector {
     protected:
         avalon::SonarBeamProcessing* processing;
         avalon::WallEstimation* wallEstimation;
+        avalon::DistanceEstimation* distanceEstimation;
         base::samples::RigidBodyState actualBodyState;
         bool validBodyState;
 
