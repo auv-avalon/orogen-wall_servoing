@@ -26,6 +26,9 @@ task_context "Task" do
 
     property("fixed_depth", 'double', -1).
         doc("reference depth")
+
+    property("debug_output", "bool", false).
+        doc("print debug output")
     
     input_port "sonar_input", 'base::samples::SonarScan'
     input_port "body_state", 'base::samples::RigidBodyState'

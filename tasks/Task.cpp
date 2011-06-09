@@ -115,6 +115,7 @@ void Task::updateHook()
     }
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
+    double distance_to_wall = distanceEstimation->getActualDistance();
     base::AUVPositionCommand positionCommand;
     positionCommand.z = _fixed_depth.get();
     if (relativeWallPos.x() == 0 && relativeWallPos.y() == 0)
@@ -139,7 +140,6 @@ void Task::updateHook()
         }
         
         // calculate new x
-        double distance_to_wall = distanceEstimation->getActualDistance();
         // (maybe use relativeWallPos.x() for average here)
         if (distance_to_wall > 0)
             positionCommand.x = distance_to_wall - _wall_distance.get();
@@ -147,6 +147,16 @@ void Task::updateHook()
             positionCommand.x = 0;
         
         positionCommand.y = 0;
+    }
+    
+    if (_debug_output.get())
+    {
+        std::cerr << TaskContext::getName() << ":" << std::endl;
+        std::cerr << "estimated position of the wall: (" << relativeWallPos.x() << "," << relativeWallPos.y() << "," 
+                        << relativeWallPos.z() << ")" << std::endl;
+        std::cerr << "distance to the wall: " << distance_to_wall << std::endl;
+        std::cerr << "relativ target position: x=" << positionCommand.x << ", y=" << positionCommand.y << ", z=" 
+                        << positionCommand.z << ", heading=" << positionCommand.heading << std::endl << std::endl;
     }
     
     if (_position_command.connected())
