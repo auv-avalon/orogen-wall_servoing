@@ -146,7 +146,7 @@ void Task::updateHook()
         else
             positionCommand.x = 0;
         
-        positionCommand.y = 0;
+        positionCommand.y = _y_distance.get();
     }
     
     if (_debug_output.get())

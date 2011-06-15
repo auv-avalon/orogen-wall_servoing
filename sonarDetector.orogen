@@ -29,6 +29,9 @@ task_context "Task" do
 
     property("debug_output", "bool", false).
         doc("print debug output")
+
+    property("y_distance", "double", 0).
+        doc("set distance for the y axis, witch will result in a certain speed")
     
     input_port "sonar_input", 'base::samples::SonarScan'
     input_port "body_state", 'base::samples::RigidBodyState'
