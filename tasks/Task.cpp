@@ -132,11 +132,11 @@ void Task::updateHook()
         if (relativeWallPos.y() < 0)
         {
             //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            positionCommand.heading = heading - delta_rad;
+            positionCommand.heading = heading + _heading_modulation.get() - delta_rad;
         }
         else 
         {
-            positionCommand.heading = heading + delta_rad;
+            positionCommand.heading = heading + _heading_modulation.get() + delta_rad;
         }
         
         // calculate new x

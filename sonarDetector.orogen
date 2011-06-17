@@ -12,14 +12,13 @@ task_context "Task" do
         doc("minimum distance for sonar responses in a beam")
     property("beam_threshold_max","double", 5).
         doc("maximum distance for sonar responses in a beam")
+    property("min_response_value","double",10).
+        doc("minimum value for responses in a beam, everything below will be ignored")
 
     property("wall_estimation_start_angle","double", 2.35619).
         doc("start angle for the wall estimation")
     property("wall_estimation_end_angle","double", 3.92699).
         doc("end angle for the wall estimation")
-
-    property("min_response_value","double",10).
-        doc("minimum value for responses in a beam, everything below will be ignored")
 
     property("wall_distance", 'double', 2).
         doc("reference distance to wall")
@@ -32,6 +31,9 @@ task_context "Task" do
 
     property("y_distance", "double", 0).
         doc("set distance for the y axis, witch will result in a certain speed")
+
+    property("heading_modulation", "double", 0).
+        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall in in front")
     
     input_port "sonar_input", 'base::samples::SonarScan'
     input_port "body_state", 'base::samples::RigidBodyState'
