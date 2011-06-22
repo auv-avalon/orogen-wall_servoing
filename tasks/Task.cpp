@@ -7,7 +7,9 @@ using namespace sonardetector;
 
 Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
+    , processing(0), wallEstimation(0), distanceEstimation(0)
 {
+	
 }
 
 Task::~Task()
@@ -43,6 +45,7 @@ bool Task::startHook()
     }
     
     // check property values
+    delete processing;
     processing = new avalon::SonarBeamProcessing(avalon::globalMaximum, avalon::persistNewScans);
     double beam_threshold_min = _beam_threshold_min.get();
     double beam_threshold_max = _beam_threshold_max.get();
@@ -72,6 +75,7 @@ bool Task::startHook()
     processing->enableBeamThreshold(_enable_beam_threshold.get());
     processing->setMinResponseValue(min_response_value);
     
+    delete wallEstimation;
     wallEstimation = new avalon::WallEstimation();
     avalon::estimationSettings settings;
     settings.segMode = avalon::forEachEdge;
@@ -80,6 +84,7 @@ bool Task::startHook()
     wallEstimation->setSettings(settings);
     processing->addSonarEstimation(wallEstimation);
     
+    delete distanceEstimation;
     distanceEstimation = new avalon::DistanceEstimation();
     avalon::estimationSettings dist_settings;
     dist_settings.segMode = avalon::forEachBeam;
