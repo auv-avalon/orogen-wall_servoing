@@ -5,7 +5,7 @@ import_types_from "avalon_base"
 using_library "sonar_detectors"
 
 task_context "Task" do
-
+    # sonarbeam threshold settings
     property("enable_beam_threshold","bool",true).
         doc("if set to true the threshold for the sonar beams is enabled")
     property("beam_threshold_min","double", 0.5).
@@ -15,26 +15,29 @@ task_context "Task" do
     property("min_response_value","double",10).
         doc("minimum value for responses in a beam, everything below will be ignored")
 
+    # wall estimation settings
     property("wall_estimation_start_angle","double", 2.35619).
         doc("start angle for the wall estimation")
     property("wall_estimation_end_angle","double", 3.92699).
         doc("end angle for the wall estimation")
+    property("wall_estimation_ransac_threshold","double", 0.5).
+        doc("maximal inlier distance to the model")
+    property("wall_estimation_ransac_min_inliers","double", 0.7).
+        doc("minimum count inliers of the point cloud in percent to be a valid model")
 
+    # controller settings
     property("wall_distance", 'double', 2).
         doc("reference distance to wall")
-
     property("fixed_depth", 'double', -1).
         doc("reference depth")
+    property("y_distance", "double", 0).
+        doc("set distance for the y axis, witch will result in a certain speed")
+    property("heading_modulation", "double", 0).
+        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall in in front")
 
     property("debug_output", "bool", false).
         doc("print debug output")
 
-    property("y_distance", "double", 0).
-        doc("set distance for the y axis, witch will result in a certain speed")
-
-    property("heading_modulation", "double", 0).
-        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall in in front")
-    
     input_port "sonar_input", 'base::samples::SonarScan'
     input_port "body_state", 'base::samples::RigidBodyState'
 
