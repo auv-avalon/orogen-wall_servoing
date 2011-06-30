@@ -194,10 +194,19 @@ void Task::stopHook()
 void Task::cleanupHook()
 {
     if (processing)
+    {
         delete processing;
+        processing = 0;
+    }
     if (wallEstimation)
+    {
         delete wallEstimation;
+        wallEstimation = 0;
+    }
     if (distanceEstimation)
-        delete wallEstimation;
+    {
+        delete distanceEstimation;
+        distanceEstimation = 0;
+    }
 }
 
