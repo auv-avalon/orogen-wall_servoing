@@ -121,7 +121,7 @@ void Task::updateHook()
     if (_body_state.readNewest(bodyState) == RTT::NewData) 
     {
         validBodyState = true;
-        processing->updatePosition(bodyState.position);
+        processing->updatePosition(base::Position(0,0,0));
         processing->updateOrientation(bodyState.orientation);
         actualBodyState = bodyState;
     }
@@ -145,17 +145,16 @@ void Task::updateHook()
     }
     else 
     {
-        // calculate new heading
-        double heading = base::getYaw(actualBodyState.orientation);
+        // calculate new relative heading
         double delta_rad = acos(relativeWallPos.x() / sqrt(pow(relativeWallPos.x(), 2) + pow(relativeWallPos.y(), 2)));
         if (relativeWallPos.y() < 0)
         {
             //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            positionCommand.heading = heading + _heading_modulation.get() - delta_rad;
+            positionCommand.heading = _heading_modulation.get() - delta_rad;
         }
         else 
         {
-            positionCommand.heading = heading + _heading_modulation.get() + delta_rad;
+            positionCommand.heading = _heading_modulation.get() + delta_rad;
         }
         
         // calculate new x
@@ -174,8 +173,8 @@ void Task::updateHook()
         std::cerr << "estimated position of the wall: (" << relativeWallPos.x() << "," << relativeWallPos.y() << "," 
                         << relativeWallPos.z() << ")" << std::endl;
         std::cerr << "distance to the wall: " << distance_to_wall << std::endl;
-        std::cerr << "relativ target position: x=" << positionCommand.x << ", y=" << positionCommand.y << ", z=" 
-                        << positionCommand.z << ", heading=" << positionCommand.heading << std::endl << std::endl;
+        std::cerr << "relative target position: x=" << positionCommand.x << ", y=" << positionCommand.y << ", z=" 
+                        << positionCommand.z << ", relative_heading=" << positionCommand.heading << std::endl << std::endl;
     }
     
     if (_position_command.connected())
