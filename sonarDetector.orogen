@@ -39,7 +39,7 @@ task_context "Task" do
         doc("print debug output")
 
     input_port "sonar_input", 'base::samples::SonarScan'
-    input_port "body_state", 'base::samples::RigidBodyState'
+    input_port "orientation_sample", 'base::samples::RigidBodyState'
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")

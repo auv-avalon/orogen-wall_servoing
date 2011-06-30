@@ -16,8 +16,6 @@ namespace sonardetector {
         avalon::SonarBeamProcessing* processing;
         avalon::WallEstimation* wallEstimation;
         avalon::DistanceEstimation* distanceEstimation;
-        base::samples::RigidBodyState actualBodyState;
-        bool validBodyState;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);

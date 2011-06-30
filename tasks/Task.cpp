@@ -29,7 +29,6 @@ Task::~Task()
 
 bool Task::startHook()
 {
-    validBodyState = false;
     // check if input ports are connected
     if (!_sonar_input.connected())
     {
@@ -37,10 +36,10 @@ bool Task::startHook()
                     << "Input port 'sonar_input' is not connected." << std::endl;
         return false;
     }
-    if (!_body_state.connected())
+    if (!_orientation_sample.connected())
     {
         std::cerr << TaskContext::getName() << ": "
-                    << "Input port 'body_state' is not connected." << std::endl;
+                    << "Input port 'orientation_sample' is not connected." << std::endl;
         return false;
     }
     
@@ -117,20 +116,11 @@ void Task::updateHook()
     {
         processing->updateSonarData(sonarScan);
     }
-    base::samples::RigidBodyState bodyState;
-    if (_body_state.readNewest(bodyState) == RTT::NewData) 
+    base::samples::RigidBodyState orientation;
+    if (_orientation_sample.readNewest(orientation) == RTT::NewData) 
     {
-        validBodyState = true;
         processing->updatePosition(base::Position(0,0,0));
-        processing->updateOrientation(bodyState.orientation);
-        actualBodyState = bodyState;
-    }
-    
-    if(!validBodyState) 
-    {
-        std::cerr << TaskContext::getName() << ": " 
-            << "Waiting for a valid RigidBodyState." << std::endl;
-        return;
+        processing->updateOrientation(orientation.orientation);
     }
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
