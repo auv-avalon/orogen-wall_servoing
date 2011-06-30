@@ -29,6 +29,7 @@ Task::~Task()
 
 bool Task::startHook()
 {
+    last_state = PRE_OPERATIONAL;
     // check if input ports are connected
     if (!_sonar_input.connected())
     {
@@ -43,7 +44,7 @@ bool Task::startHook()
         return false;
     }
     
-    // check property values
+    // set up sonar beam processing
     delete processing;
     processing = new avalon::SonarBeamProcessing(avalon::globalMaximum, avalon::persistNewScans);
     double beam_threshold_min = _beam_threshold_min.get();
@@ -54,6 +55,7 @@ bool Task::startHook()
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
     
+    // check property values
     if (beam_threshold_min < 0.0 || beam_threshold_max < 0.0 || beam_threshold_min >= beam_threshold_max)
     {
         std::cerr << "The sonar beam thresholds shouldn't be smaller then 0 and the "
@@ -87,6 +89,7 @@ bool Task::startHook()
     processing->enableBeamThreshold(_enable_beam_threshold.get());
     processing->setMinResponseValue(min_response_value);
     
+    // set up wall estimation
     delete wallEstimation;
     wallEstimation = new avalon::WallEstimation();
     avalon::estimationSettings settings;
@@ -97,6 +100,7 @@ bool Task::startHook()
     wallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
     processing->addSonarEstimation(wallEstimation);
     
+    // set up distance estimation
     delete distanceEstimation;
     distanceEstimation = new avalon::DistanceEstimation();
     avalon::estimationSettings dist_settings;
@@ -111,6 +115,8 @@ bool Task::startHook()
 
 void Task::updateHook()
 {
+    States actual_state = RUNNING;
+    
     base::samples::SonarScan sonarScan;
     while (_sonar_input.read(sonarScan) == RTT::NewData) 
     {
@@ -132,6 +138,7 @@ void Task::updateHook()
         positionCommand.heading = 0;
         positionCommand.x = 0;
         positionCommand.y = 0;
+        actual_state = WALL_LOST;
     }
     else 
     {
@@ -150,9 +157,14 @@ void Task::updateHook()
         // calculate new x
         // (maybe use relativeWallPos.x() for average here)
         if (distance_to_wall > 0)
+        {
             positionCommand.x = distance_to_wall - _wall_distance.get();
+        }
         else
+        {
             positionCommand.x = 0;
+            actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
+        }
         
         positionCommand.y = _y_distance.get();
     }
@@ -167,6 +179,14 @@ void Task::updateHook()
                         << positionCommand.z << ", relative_heading=" << positionCommand.heading << std::endl << std::endl;
     }
     
+    // write state if it has changed
+    if(last_state != actual_state)
+    {
+        last_state = actual_state;
+        state(actual_state);
+    }
+    
+    // write relative position command
     if (_position_command.connected())
         _position_command.write(positionCommand);
 }

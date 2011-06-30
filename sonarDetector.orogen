@@ -33,7 +33,7 @@ task_context "Task" do
     property("y_distance", "double", 0).
         doc("set distance for the y axis, witch will result in a certain speed")
     property("heading_modulation", "double", 0).
-        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall in in front")
+        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall is in front")
 
     property("debug_output", "bool", false).
         doc("print debug output")
@@ -43,6 +43,9 @@ task_context "Task" do
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
+
+    runtime_states :WALL_LOST
+    error_states :DISTANCE_ESTIMATOR_TIMEOUT
 
     port_driven "sonar_input"
 end
