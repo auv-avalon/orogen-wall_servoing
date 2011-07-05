@@ -44,7 +44,7 @@ task_context "Task" do
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
 
-    runtime_states :WALL_LOST
+    runtime_states :WALL_FOUND, :SEARCHING_WALL
     error_states :DISTANCE_ESTIMATOR_TIMEOUT
 
     port_driven "sonar_input"

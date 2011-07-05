@@ -135,13 +135,14 @@ void Task::updateHook()
     positionCommand.z = _fixed_depth.get();
     if (relativeWallPos.x() == 0 && relativeWallPos.y() == 0)
     {
+        actual_state = SEARCHING_WALL;
         positionCommand.heading = 0;
         positionCommand.x = 0;
         positionCommand.y = 0;
-        actual_state = WALL_LOST;
     }
     else 
     {
+        actual_state = WALL_FOUND;
         // calculate new relative heading
         double delta_rad = acos(relativeWallPos.x() / sqrt(pow(relativeWallPos.x(), 2) + pow(relativeWallPos.y(), 2)));
         if (relativeWallPos.y() < 0)
