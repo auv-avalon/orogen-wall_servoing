@@ -9,7 +9,7 @@ Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
     , processing(0), wallEstimation(0), distanceEstimation(0)
 {
-	
+        
 }
 
 Task::~Task()
@@ -154,20 +154,26 @@ void Task::updateHook()
         {
             positionCommand.heading = _heading_modulation.get() + delta_rad;
         }
-        
-        // calculate new x
-        // (maybe use relativeWallPos.x() for average here)
-        if (distance_to_wall > 0)
+    }
+    
+    // calculate new x
+    // (maybe use relativeWallPos.x() for average here)
+    if (distance_to_wall > 0)
+    {
+        if (actual_state == WALL_FOUND || actual_state == SEARCHING_WALL)
         {
             positionCommand.x = distance_to_wall - _wall_distance.get();
         }
         else
         {
             positionCommand.x = 0;
-            actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
         }
-        
         positionCommand.y = _y_distance.get();
+    }
+    else
+    {
+        positionCommand.x = 0;
+        actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
     }
     
     if (_debug_output.get())
