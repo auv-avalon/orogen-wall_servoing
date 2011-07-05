@@ -148,11 +148,23 @@ void Task::updateHook()
         if (relativeWallPos.y() < 0)
         {
             //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            positionCommand.heading = _heading_modulation.get() - delta_rad;
+            if (relativeWallPos.x() > 2.0 * _wall_distance.get())
+                positionCommand.heading = -delta_rad;
+            else
+            {
+                positionCommand.heading = _heading_modulation.get() - delta_rad;
+                positionCommand.y = _y_distance.get();
+            }
         }
         else 
         {
-            positionCommand.heading = _heading_modulation.get() + delta_rad;
+            if (relativeWallPos.x() > 2.0 * _wall_distance.get())
+                positionCommand.heading = delta_rad;
+            else
+            {
+                positionCommand.heading = _heading_modulation.get() + delta_rad;
+                positionCommand.y = _y_distance.get();
+            }
         }
     }
     
@@ -168,7 +180,6 @@ void Task::updateHook()
         {
             positionCommand.x = 0;
         }
-        positionCommand.y = _y_distance.get();
     }
     else
     {
