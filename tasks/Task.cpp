@@ -9,7 +9,7 @@ Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
     , processing(0), wallEstimation(0), distanceEstimation(0)
 {
-        
+    
 }
 
 Task::~Task()
@@ -65,12 +65,6 @@ bool Task::startHook()
     if (min_response_value < 0.0) 
     {
         std::cerr << "The minimum response value has to be greater than 0!" << std::endl;
-        return false;
-    }
-    if (wall_estimation_start_angle < M_PI_2 || wall_estimation_start_angle > M_PI + M_PI_2 ||
-        wall_estimation_end_angle < M_PI_2 || wall_estimation_end_angle > M_PI + M_PI_2)
-    {
-        std::cerr << "The wall estimation angles have to be between 1/2 PI and 3/2 PI for this task." << std::endl;
         return false;
     }
     if (ransac_threshold < 0.0)
@@ -131,14 +125,16 @@ void Task::updateHook()
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
     double distance_to_wall = distanceEstimation->getActualDistance();
+    Eigen::Vector3d relPos(0,0,0);
     base::AUVPositionCommand positionCommand;
     positionCommand.z = _fixed_depth.get();
     if (relativeWallPos.x() == 0 && relativeWallPos.y() == 0)
     {
         actual_state = SEARCHING_WALL;
+        
         positionCommand.heading = 0;
-        positionCommand.x = 0;
-        positionCommand.y = 0;
+        relPos.x() = _exploration_speed.get();
+        relPos.y() = 0;
     }
     else 
     {
@@ -148,44 +144,34 @@ void Task::updateHook()
         if (relativeWallPos.y() < 0)
         {
             //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            if (relativeWallPos.x() > 2.0 * _wall_distance.get())
-                positionCommand.heading = -delta_rad;
-            else
-            {
-                positionCommand.heading = _heading_modulation.get() - delta_rad;
-                positionCommand.y = _y_distance.get();
-            }
+            positionCommand.heading = delta_rad;
         }
         else 
         {
-            if (relativeWallPos.x() > 2.0 * _wall_distance.get())
-                positionCommand.heading = delta_rad;
-            else
-            {
-                positionCommand.heading = _heading_modulation.get() + delta_rad;
-                positionCommand.y = _y_distance.get();
-            }
+            positionCommand.heading = delta_rad;
         }
-    }
-    
-    // calculate new x
-    // (maybe use relativeWallPos.x() for average here)
-    if (distance_to_wall > 0)
-    {
-        if (actual_state == WALL_FOUND || actual_state == SEARCHING_WALL)
+        // do servoing if wall is near enough
+        if (relativeWallPos.x() < 2.0 * _wall_distance.get())
         {
-            positionCommand.x = distance_to_wall - _wall_distance.get();
+            relPos.y() = _servoing_speed.get();
+        }
+        
+        // calculate new x
+        // (maybe use relativeWallPos.x() for average here)
+        if (distance_to_wall > 0)
+        {
+            relPos.x() = distance_to_wall - _wall_distance.get();
         }
         else
         {
-            positionCommand.x = 0;
+            relPos.x() = 0;
+            actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
         }
     }
-    else
-    {
-        positionCommand.x = 0;
-        actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
-    }
+    
+    relPos = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relPos;
+    positionCommand.x = relPos.x();
+    positionCommand.y = relPos.y();
     
     if (_debug_output.get())
     {

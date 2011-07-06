@@ -30,8 +30,10 @@ task_context "Task" do
         doc("reference distance to wall")
     property("fixed_depth", 'double', -1).
         doc("reference depth")
-    property("y_distance", "double", 0).
+    property("servoing_speed", "double", 0).
         doc("set distance for the y axis, witch will result in a certain speed")
+    property("exploration_speed", "double", 0.2).
+        doc("the exploration will simply drive forward in the origin serviong direction")
     property("heading_modulation", "double", 0).
         doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall is in front")
 
