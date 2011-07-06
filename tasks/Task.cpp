@@ -56,6 +56,12 @@ bool Task::startHook()
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
     
     // check property values
+    if (wall_estimation_start_angle < 0 || wall_estimation_start_angle > 2*M_PI ||
+        wall_estimation_end_angle < 0 || wall_estimation_end_angle > 2*M_PI)
+    {
+        std::cerr << "The wall estimation angles have to be between 0 and 2 PI." << std::endl;
+        return false;
+    }
     if (beam_threshold_min < 0.0 || beam_threshold_max < 0.0 || beam_threshold_min >= beam_threshold_max)
     {
         std::cerr << "The sonar beam thresholds shouldn't be smaller then 0 and the "
@@ -144,11 +150,11 @@ void Task::updateHook()
         if (relativeWallPos.y() < 0)
         {
             //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            positionCommand.heading = delta_rad;
+            positionCommand.heading = _heading_modulation.get() - delta_rad;
         }
         else 
         {
-            positionCommand.heading = delta_rad;
+            positionCommand.heading = _heading_modulation.get() + delta_rad;
         }
         // do servoing if wall is near enough
         if (relativeWallPos.x() < 2.0 * _wall_distance.get())
