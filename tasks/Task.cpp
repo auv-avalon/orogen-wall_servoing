@@ -160,7 +160,7 @@ void Task::updateHook()
         // (maybe use relativeWallPos.x() for average here)
         if (distance_to_wall > 0)
         {
-            relPos.x() = distance_to_wall - _wall_distance.get();
+            relPos.x() = ((distance_to_wall + relativeWallPos.x()) * 0.5) - _wall_distance.get();
         }
         else
         {
