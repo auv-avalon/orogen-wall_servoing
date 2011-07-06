@@ -87,7 +87,7 @@ bool Task::startHook()
     delete wallEstimation;
     wallEstimation = new avalon::WallEstimation();
     avalon::estimationSettings settings;
-    settings.segMode = avalon::forEachEdge;
+    settings.segMode = avalon::forEachBeam;
     settings.startAngle = wall_estimation_start_angle;
     settings.endAngle = wall_estimation_end_angle;
     wallEstimation->setSettings(settings);
