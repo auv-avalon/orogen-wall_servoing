@@ -2,6 +2,7 @@
 
 #include "Task.hpp"
 #include <sonar_detectors/SonarDetectorTypes.hpp>
+#include <SonarDetectorTaskTypes.hpp>
 
 using namespace sonardetector;
 
@@ -55,13 +56,6 @@ bool Task::startHook()
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
     
-    // check property values
-    if (wall_estimation_start_angle < 0 || wall_estimation_start_angle > 2*M_PI ||
-        wall_estimation_end_angle < 0 || wall_estimation_end_angle > 2*M_PI)
-    {
-        std::cerr << "The wall estimation angles have to be between 0 and 2 PI." << std::endl;
-        return false;
-    }
     if (beam_threshold_min < 0.0 || beam_threshold_max < 0.0 || beam_threshold_min >= beam_threshold_max)
     {
         std::cerr << "The sonar beam thresholds shouldn't be smaller then 0 and the "
@@ -179,15 +173,19 @@ void Task::updateHook()
     positionCommand.x = relPos.x();
     positionCommand.y = relPos.y();
     
-    if (_debug_output.get())
+    // write detection data
+    avalon::wallDetectionData wallData;
+    wallData.time = base::Time::now();
+    const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
+    if (walls.size() >= 1)
     {
-        std::cerr << TaskContext::getName() << ":" << std::endl;
-        std::cerr << "estimated position of the wall: (" << relativeWallPos.x() << "," << relativeWallPos.y() << "," 
-                        << relativeWallPos.z() << ")" << std::endl;
-        std::cerr << "distance to the wall: " << distance_to_wall << std::endl;
-        std::cerr << "relative target position: x=" << positionCommand.x << ", y=" << positionCommand.y << ", z=" 
-                        << positionCommand.z << ", relative_heading=" << positionCommand.heading << std::endl << std::endl;
+        wallData.pose_vector = walls[0].first;
+        wallData.direction_vector = walls[0].second;
     }
+    wallData.distance = distance_to_wall;
+    wallData.relative_wall_position = relativeWallPos;
+    wallData.pointCloud = wallEstimation->getPointCloud();
+    _wall_data.write(wallData);
     
     // write state if it has changed
     if(last_state != actual_state)
