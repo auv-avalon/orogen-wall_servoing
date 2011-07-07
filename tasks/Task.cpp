@@ -185,7 +185,7 @@ void Task::updateHook()
     wallData.distance = distance_to_wall;
     wallData.relative_wall_position = relativeWallPos;
     wallData.pointCloud = wallEstimation->getPointCloud();
-    // _wall_data.write(wallData);
+    _wall_data.write(wallData);
     
     // write state if it has changed
     if(last_state != actual_state)
