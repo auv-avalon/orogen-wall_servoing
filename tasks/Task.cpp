@@ -3,6 +3,7 @@
 #include "Task.hpp"
 #include <sonar_detectors/SonarDetectorTypes.hpp>
 #include <SonarDetectorTaskTypes.hpp>
+#include <sonar_detectors/SonarDetectorMath.hpp>
 
 using namespace sonardetector;
 
@@ -31,6 +32,10 @@ Task::~Task()
 bool Task::startHook()
 {
     last_state = PRE_OPERATIONAL;
+    checking_count = 0;
+    last_distance_to_wall = -1;
+    last_angle_to_wall = 2.0 * M_PI;
+    wall_checking_done = false;
     // check if input ports are connected
     if (!_sonar_input.connected())
     {
@@ -124,68 +129,143 @@ void Task::updateHook()
     }
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
-    double distance_to_wall = distanceEstimation->getActualDistance();
+    double distance_to_wall = avalon::length(relativeWallPos);//distanceEstimation->getActualDistance();
     Eigen::Vector3d relPos(0,0,0);
     base::AUVPositionCommand positionCommand;
     positionCommand.z = _fixed_depth.get();
     if (relativeWallPos.x() == 0 && relativeWallPos.y() == 0)
     {
         actual_state = SEARCHING_WALL;
-        
         positionCommand.heading = 0;
+        if (!wall_checking_done)
+            checking_count = 0;
         relPos.x() = _exploration_speed.get();
         relPos.y() = 0;
     }
     else 
     {
-        actual_state = WALL_FOUND;
         // calculate new relative heading
         double delta_rad = acos(relativeWallPos.x() / sqrt(pow(relativeWallPos.x(), 2) + pow(relativeWallPos.y(), 2)));
         if (relativeWallPos.y() < 0)
         {
-            //values outside of -PI..PI will handled by the auv_rel_pos_controller
-            positionCommand.heading = _heading_modulation.get() - delta_rad;
+            current_wall_angle = orientation.getYaw() - delta_rad;
         }
         else 
         {
-            positionCommand.heading = _heading_modulation.get() + delta_rad;
+            current_wall_angle = orientation.getYaw() + delta_rad;
         }
-        // do servoing if wall is near enough
-        if (relativeWallPos.x() < 2.0 * _wall_distance.get())
+        // correct angles
+        if (current_wall_angle > M_PI)
+            current_wall_angle -= 2.0 * M_PI;
+        else if (current_wall_angle < -M_PI)
+            current_wall_angle += 2.0 * M_PI;
+            
+        // check for some samples if the wall distance seems to be stable
+        if (checking_count < checking_wall_samples)
         {
-            relPos.y() = _servoing_speed.get();
-        }
-        
-        // calculate new x
-        // (maybe use relativeWallPos.x() for average here)
-        if (distance_to_wall > 0)
-        {
-            relPos.x() = ((distance_to_wall + relativeWallPos.x()) * 0.5) - _wall_distance.get();
+            actual_state = CHECKING_WALL;
+            origin_wall_angle = 2.0 * M_PI;
+            if (last_distance_to_wall < 0)
+            {
+                last_distance_to_wall = distance_to_wall;
+            }
+            if (last_angle_to_wall > M_PI)
+            {
+                last_angle_to_wall = current_wall_angle;
+            }
+            
+            if (last_distance_to_wall < distance_to_wall + check_distance_threshold &&
+                last_distance_to_wall > distance_to_wall - check_distance_threshold && 
+                last_angle_to_wall < current_wall_angle + check_angle_threshold &&
+                last_angle_to_wall > current_wall_angle - check_angle_threshold)
+            {
+                checking_count++;
+                last_distance_to_wall = distance_to_wall;
+                last_angle_to_wall = current_wall_angle;
+            }
+            else
+            {
+                checking_count = 0;
+                last_distance_to_wall = -1;
+                last_angle_to_wall = 2.0 * M_PI;
+            }
         }
         else
         {
-            relPos.x() = 0;
-            actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
+            wall_checking_done = true;
+            actual_state = WALL_FOUND;
+            
+            if (relativeWallPos.y() < 0)
+            {
+                //values outside of -PI..PI will handled by the auv_rel_pos_controller
+                positionCommand.heading = _heading_modulation.get() - delta_rad;
+            }
+            else 
+            {
+                positionCommand.heading = _heading_modulation.get() + delta_rad;
+            }
+            
+            // save inital heading
+            if (origin_wall_angle > M_PI)
+            {
+                // save inital wall position
+                origin_wall_angle = current_wall_angle;
+                std::cerr << origin_wall_angle << std::endl;
+            }
+            else
+            {
+                // check for corner
+                if (std::abs(origin_wall_angle - current_wall_angle) > M_PI * 0.4)
+                {
+                    std::cerr << "found corner" << std::endl;
+                    actual_state = DETECTED_CORNER;
+                }
+                // check for lost wall position
+                if (std::abs(origin_wall_angle - current_wall_angle) > M_PI * 0.8)
+                {
+                    std::cerr << "lost position" << std::endl;
+                    std::cerr << "drive back " << std::endl;
+                }
+            }
+            
+            // do servoing if wall is near enough
+            if (relativeWallPos.x() < 2.0 * _wall_distance.get())
+            {
+                relPos.y() = _servoing_speed.get();
+            }
+            
+            // calculate new x
+            // (maybe use relativeWallPos.x() for average here)
+            if (distance_to_wall > 0)
+            {
+                relPos.x() = distance_to_wall - _wall_distance.get();
+            }
+            else
+            {
+                relPos.x() = 0;
+                actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
+            }
+            
+            
+            // write detection data
+            avalon::wallDetectionData wallData;
+            wallData.time = base::Time::now();
+            const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
+            if (walls.size() >= 1)
+            {
+                wallData.pose_vector = walls[0].first;
+                wallData.direction_vector = walls[0].second;
+            }
+            wallData.distance = distance_to_wall;
+            wallData.relative_wall_position = relativeWallPos;
+            wallData.pointCloud = wallEstimation->getPointCloud();
+            _wall_data.write(wallData);
         }
     }
     
     relPos = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relPos;
     positionCommand.x = relPos.x();
     positionCommand.y = relPos.y();
-    
-    // write detection data
-    avalon::wallDetectionData wallData;
-    wallData.time = base::Time::now();
-    const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
-    if (walls.size() >= 1)
-    {
-        wallData.pose_vector = walls[0].first;
-        wallData.direction_vector = walls[0].second;
-    }
-    wallData.distance = distance_to_wall;
-    wallData.relative_wall_position = relativeWallPos;
-    wallData.pointCloud = wallEstimation->getPointCloud();
-    _wall_data.write(wallData);
     
     // write state if it has changed
     if(last_state != actual_state)

@@ -17,6 +17,15 @@ namespace sonardetector {
         avalon::WallEstimation* wallEstimation;
         avalon::DistanceEstimation* distanceEstimation;
         States last_state;
+        int checking_count;
+        const static int checking_wall_samples = 50;
+        double last_distance_to_wall;
+        double last_angle_to_wall;
+        const static double check_distance_threshold = 0.5;
+        const static double check_angle_threshold = 0.2;
+        double origin_wall_angle;
+        double current_wall_angle;
+        bool wall_checking_done;
 
     public:
         Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);
