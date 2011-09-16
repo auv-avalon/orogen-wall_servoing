@@ -245,27 +245,26 @@ void Task::updateHook()
                 relPos.x() = 0;
                 actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
             }
-            
-            
-            // write detection data
-            avalon::wallDetectionData wallData;
-            wallData.time = base::Time::now();
-            const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
-            if (walls.size() >= 1)
-            {
-                wallData.pose_vector = walls[0].first;
-                wallData.direction_vector = walls[0].second;
-            }
-            wallData.distance = distance_to_wall;
-            wallData.relative_wall_position = relativeWallPos;
-            wallData.pointCloud = wallEstimation->getPointCloud();
-            _wall_data.write(wallData);
         }
     }
     
     relPos = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relPos;
     positionCommand.x = relPos.x();
     positionCommand.y = relPos.y();
+    
+    // write detection data
+    avalon::wallDetectionData wallData;
+    wallData.time = base::Time::now();
+    const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
+    if (walls.size() >= 1)
+    {
+        wallData.wall.push_back(walls[0].first);
+        wallData.wall.push_back(walls[0].second);
+    }
+    wallData.distance = distance_to_wall;
+    wallData.relative_wall_position = relativeWallPos;
+    wallData.pointCloud = wallEstimation->getPointCloud();
+    _wall_data.write(wallData);
     
     // write state if it has changed
     if(last_state != actual_state)
