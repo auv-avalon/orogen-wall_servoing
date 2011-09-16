@@ -12,12 +12,11 @@ struct wallDetectionData
 {
     std::vector<base::Vector3d> pointCloud;
     base::Time time;
-    base::Vector3d pose_vector;
-    base::Vector3d direction_vector;
+    std::vector<base::Vector3d> wall;
     base::Vector3d relative_wall_position;
     double distance;
     wallDetectionData()
-    : distance(0){}
+    : distance(0), time(base::Time::now()){}
 };
 
 }
