@@ -114,7 +114,7 @@ void Task::updateHook()
 {
     States actual_state = RUNNING;
     
-    base::samples::SonarScan sonarScan;
+    base::samples::SonarBeam sonarScan;
     while (_sonar_input.read(sonarScan) == RTT::NewData) 
     {
         processing->updateSonarData(sonarScan);
