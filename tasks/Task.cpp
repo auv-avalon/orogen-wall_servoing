@@ -52,7 +52,7 @@ bool Task::startHook()
     
     // set up sonar beam processing
     delete processing;
-    processing = new avalon::SonarBeamProcessing(avalon::globalMaximum, avalon::persistNewScans);
+    processing = new avalon::SonarBeamProcessing(avalon::globalMaximum);
     double beam_threshold_min = _beam_threshold_min.get();
     double beam_threshold_max = _beam_threshold_max.get();
     double min_response_value = _min_response_value.get();
@@ -92,7 +92,6 @@ bool Task::startHook()
     delete wallEstimation;
     wallEstimation = new avalon::WallEstimation();
     avalon::estimationSettings settings;
-    settings.segMode = avalon::forEachBeam;
     settings.startAngle = wall_estimation_start_angle;
     settings.endAngle = wall_estimation_end_angle;
     wallEstimation->setSettings(settings);
@@ -103,7 +102,6 @@ bool Task::startHook()
     delete distanceEstimation;
     distanceEstimation = new avalon::DistanceEstimation();
     avalon::estimationSettings dist_settings;
-    dist_settings.segMode = avalon::forEachBeam;
     dist_settings.startAngle = wall_estimation_start_angle;
     dist_settings.endAngle = wall_estimation_end_angle;
     distanceEstimation->setSettings(dist_settings);
