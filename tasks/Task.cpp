@@ -52,7 +52,7 @@ bool Task::startHook()
     
     // set up sonar beam processing
     delete processing;
-    processing = new avalon::SonarBeamProcessing(avalon::globalMaximum);
+    processing = new avalon::SonarBeamProcessing();
     double beam_threshold_min = _beam_threshold_min.get();
     double beam_threshold_max = _beam_threshold_max.get();
     double min_response_value = _min_response_value.get();
@@ -84,8 +84,7 @@ bool Task::startHook()
         return false;
     }
     
-    processing->setBeamThreshold(beam_threshold_min, beam_threshold_max);
-    processing->enableBeamThreshold(_enable_beam_threshold.get());
+    processing->setBeamThreshold(beam_threshold_min);
     processing->setMinResponseValue(min_response_value);
     
     // set up wall estimation
