@@ -1,5 +1,5 @@
 <package>
-  <description brief="Using the sonar detector librarys to estimate the positions of objects.">
+  <description brief="task which handles the wall servoing">
   
   </description>
   <author>Sascha Arnold/sirius@tzi.de</author>

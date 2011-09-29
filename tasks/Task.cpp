@@ -5,7 +5,7 @@
 #include <SonarDetectorTaskTypes.hpp>
 #include <sonar_detectors/SonarDetectorMath.hpp>
 
-using namespace sonardetector;
+using namespace wall_servoing;
 
 Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)

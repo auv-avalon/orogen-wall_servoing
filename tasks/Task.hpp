@@ -1,14 +1,14 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.hpp */
 
-#ifndef SONARDETECTOR_TASK_TASK_HPP
-#define SONARDETECTOR_TASK_TASK_HPP
+#ifndef WALL_SERVOING_TASK_TASK_HPP
+#define WALL_SERVOING_TASK_TASK_HPP
 
-#include "sonardetector/TaskBase.hpp"
+#include "wall_servoing/TaskBase.hpp"
 #include <sonar_detectors/SonarBeamProcessing.hpp>
 #include <sonar_detectors/WallEstimation.hpp>
 #include <sonar_detectors/DistanceEstimation.hpp>
 
-namespace sonardetector {
+namespace wall_servoing {
     class Task : public TaskBase
     {
 	friend class TaskBase;

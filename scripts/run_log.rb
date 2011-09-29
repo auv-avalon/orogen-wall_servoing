@@ -6,9 +6,9 @@ include Orocos
 Orocos.initialize
 log = Orocos::Log::Replay.open(ARGV)
 
-Orocos.run 'sonardetector' do
+Orocos.run 'wall_servoing' do
 
-    sonardetector = Orocos::TaskContext.get 'sonardetector'
+    sonardetector = Orocos::TaskContext.get 'wall_servoing'
 
     # sonarbeam settings
     sonardetector.enable_beam_threshold = true
@@ -41,13 +41,13 @@ Orocos.run 'sonardetector' do
     #sonarbeamviz = view3d.createPlugin('sonarbeam', 'SonarBeamVisualization')
 
     # Connect debug port to vizkit plugins
-    con = Vizkit.connect_port_to 'sonardetector', 'wall_data', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+    con = Vizkit.connect_port_to 'wall_servoing', 'wall_data', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
         sonarfeatureviz.updatePointCloud(sample.pointCloud)
         wallviz.updateWallData(sample.wall)
         sample
     end 
 
-    con = Vizkit.connect_port_to 'sonardetector', 'position_command', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+    con = Vizkit.connect_port_to 'wall_servoing', 'position_command', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
         auv_avalon.updateDesiredPosition(sample)
         sample
     end 

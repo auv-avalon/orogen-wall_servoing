@@ -1,4 +1,4 @@
-name "sonardetector"
+name "wall_servoing"
 
 import_types_from "base"
 import_types_from "avalon_base"
@@ -55,8 +55,8 @@ task_context "Task" do
 end
 
 
-deployment "sonardetector" do
-    task("sonardetector", "Task").
+deployment "wall_servoing" do
+    task("wall_servoing", "Task").
         periodic(0.1)
 end
 
