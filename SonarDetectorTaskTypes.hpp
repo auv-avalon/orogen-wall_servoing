@@ -4,13 +4,14 @@
 #include <vector>
 #include <base/eigen.h>
 #include <base/time.h>
+#include <base/samples/pointcloud.h>
 
 namespace avalon
 {
 
 struct wallDetectionData
 {
-    std::vector<base::Vector3d> pointCloud;
+    base::samples::Pointcloud pointCloud;
     base::Time time;
     std::vector<base::Vector3d> wall;
     base::Vector3d relative_wall_position;

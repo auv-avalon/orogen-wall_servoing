@@ -4,6 +4,7 @@
 #include <sonar_detectors/SonarDetectorTypes.hpp>
 #include <SonarDetectorTaskTypes.hpp>
 #include <sonar_detectors/SonarDetectorMath.hpp>
+#include <base/samples/pointcloud.h>
 
 using namespace wall_servoing;
 
@@ -260,7 +261,8 @@ void Task::updateHook()
     }
     wallData.distance = distance_to_wall;
     wallData.relative_wall_position = relativeWallPos;
-    wallData.pointCloud = wallEstimation->getPointCloud();
+    wallData.pointCloud.points = wallEstimation->getPointCloud();
+    wallData.pointCloud.time = base::Time::now();
     _wall_data.write(wallData);
     
     // write state if it has changed
