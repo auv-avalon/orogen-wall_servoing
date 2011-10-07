@@ -53,7 +53,7 @@ bool Task::startHook()
     
     // set up sonar beam processing
     delete processing;
-    processing = new avalon::SonarBeamProcessing();
+    processing = new sonar_detectors::SonarBeamProcessing();
     double beam_threshold_min = _beam_threshold_min.get();
     double beam_threshold_max = _beam_threshold_max.get();
     double min_response_value = _min_response_value.get();
@@ -90,8 +90,8 @@ bool Task::startHook()
     
     // set up wall estimation
     delete wallEstimation;
-    wallEstimation = new avalon::WallEstimation();
-    avalon::estimationSettings settings;
+    wallEstimation = new sonar_detectors::WallEstimation();
+    sonar_detectors::estimationSettings settings;
     settings.startAngle = wall_estimation_start_angle;
     settings.endAngle = wall_estimation_end_angle;
     wallEstimation->setSettings(settings);
@@ -100,8 +100,8 @@ bool Task::startHook()
     
     // set up distance estimation
     delete distanceEstimation;
-    distanceEstimation = new avalon::DistanceEstimation();
-    avalon::estimationSettings dist_settings;
+    distanceEstimation = new sonar_detectors::DistanceEstimation();
+    sonar_detectors::estimationSettings dist_settings;
     dist_settings.startAngle = wall_estimation_start_angle;
     dist_settings.endAngle = wall_estimation_end_angle;
     distanceEstimation->setSettings(dist_settings);
@@ -127,7 +127,7 @@ void Task::updateHook()
     }
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
-    double distance_to_wall = avalon::length(relativeWallPos);//distanceEstimation->getActualDistance();
+    double distance_to_wall = sonar_detectors::length(relativeWallPos);//distanceEstimation->getActualDistance();
     Eigen::Vector3d relPos(0,0,0);
     base::AUVPositionCommand positionCommand;
     positionCommand.z = _fixed_depth.get();
@@ -251,7 +251,7 @@ void Task::updateHook()
     positionCommand.y = relPos.y();
     
     // write detection data
-    avalon::wallDetectionData wallData;
+    sonar_detectors::wallDetectionData wallData;
     wallData.time = base::Time::now();
     const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
     if (walls.size() >= 1)

@@ -13,9 +13,9 @@ namespace wall_servoing {
     {
 	friend class TaskBase;
     protected:
-        avalon::SonarBeamProcessing* processing;
-        avalon::WallEstimation* wallEstimation;
-        avalon::DistanceEstimation* distanceEstimation;
+        sonar_detectors::SonarBeamProcessing* processing;
+        sonar_detectors::WallEstimation* wallEstimation;
+        sonar_detectors::DistanceEstimation* distanceEstimation;
         States last_state;
         int checking_count;
         const static int checking_wall_samples = 50;

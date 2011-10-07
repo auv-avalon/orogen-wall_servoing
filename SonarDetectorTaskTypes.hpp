@@ -6,7 +6,7 @@
 #include <base/time.h>
 #include <base/samples/pointcloud.h>
 
-namespace avalon
+namespace sonar_detectors
 {
 
 struct wallDetectionData

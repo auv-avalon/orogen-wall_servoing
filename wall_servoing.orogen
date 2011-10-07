@@ -45,7 +45,7 @@ task_context "Task" do
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
 
-    output_port('wall_data', 'avalon/wallDetectionData').
+    output_port('wall_data', 'sonar_detectors/wallDetectionData').
         doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
     runtime_states :WALL_FOUND, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER
