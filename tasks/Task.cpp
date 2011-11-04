@@ -92,8 +92,8 @@ bool Task::startHook()
     delete wallEstimation;
     wallEstimation = new sonar_detectors::WallEstimation();
     sonar_detectors::estimationSettings settings;
-    settings.startAngle = wall_estimation_start_angle;
-    settings.endAngle = wall_estimation_end_angle;
+    settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
+    settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
     wallEstimation->setSettings(settings);
     wallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
     processing->addSonarEstimation(wallEstimation);
@@ -102,8 +102,8 @@ bool Task::startHook()
     delete distanceEstimation;
     distanceEstimation = new sonar_detectors::DistanceEstimation();
     sonar_detectors::estimationSettings dist_settings;
-    dist_settings.startAngle = wall_estimation_start_angle;
-    dist_settings.endAngle = wall_estimation_end_angle;
+    dist_settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
+    dist_settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
     distanceEstimation->setSettings(dist_settings);
     processing->addSonarEstimation(distanceEstimation);
 
