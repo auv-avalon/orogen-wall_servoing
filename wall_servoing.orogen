@@ -6,20 +6,10 @@ import_types_from "SonarDetectorTaskTypes.hpp"
 using_library "sonar_detectors"
 
 task_context "Task" do
-    # sonarbeam threshold settings
-    property("enable_beam_threshold","bool",true).
-        doc("if set to true the threshold for the sonar beams is enabled")
-    property("beam_threshold_min","double", 0.5).
-        doc("minimum distance for sonar responses in a beam")
-    property("beam_threshold_max","double", 5).
-        doc("maximum distance for sonar responses in a beam")
-    property("min_response_value","double",10).
-        doc("minimum value for responses in a beam, everything below will be ignored")
-
     # wall estimation settings
-    property("wall_estimation_start_angle","double", -1).
+    property("wall_estimation_start_angle","double", 0).
         doc("start angle for the wall estimation")
-    property("wall_estimation_end_angle","double", -1).
+    property("wall_estimation_end_angle","double", 0).
         doc("end angle for the wall estimation")
     property("wall_estimation_ransac_threshold","double", 0.5).
         doc("maximal inlier distance to the model")
@@ -38,8 +28,8 @@ task_context "Task" do
     property("heading_modulation", "double", 0).
         doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall is in front")
 
-    input_port("sonar_input", 'base::samples::SonarBeam').
-    	needs_reliable_connection
+    input_port('sonarbeam_feature', '/base/samples/LaserScan').
+        doc("newest sonar feature")
     input_port "orientation_sample", 'base::samples::RigidBodyState'
 
     output_port('position_command', '/base/AUVPositionCommand').
@@ -51,7 +41,7 @@ task_context "Task" do
     runtime_states :WALL_FOUND, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER
     error_states :DISTANCE_ESTIMATOR_TIMEOUT
 
-    port_driven "sonar_input"
+    port_driven "sonarbeam_feature"
 end
 
 

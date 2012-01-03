@@ -4,7 +4,6 @@
 #define WALL_SERVOING_TASK_TASK_HPP
 
 #include "wall_servoing/TaskBase.hpp"
-#include <sonar_detectors/SonarBeamProcessing.hpp>
 #include <sonar_detectors/WallEstimation.hpp>
 #include <sonar_detectors/DistanceEstimation.hpp>
 
@@ -13,9 +12,9 @@ namespace wall_servoing {
     {
 	friend class TaskBase;
     protected:
-        sonar_detectors::SonarBeamProcessing* processing;
         sonar_detectors::WallEstimation* wallEstimation;
         sonar_detectors::DistanceEstimation* distanceEstimation;
+        base::samples::RigidBodyState current_orientation;
         States last_state;
         int checking_count;
         const static int checking_wall_samples = 50;

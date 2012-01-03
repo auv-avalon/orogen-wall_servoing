@@ -10,7 +10,7 @@ using namespace wall_servoing;
 
 Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
-    , processing(0), wallEstimation(0), distanceEstimation(0)
+    , wallEstimation(0), distanceEstimation(0)
 {
     
 }
@@ -37,11 +37,12 @@ bool Task::startHook()
     last_distance_to_wall = -1;
     last_angle_to_wall = 2.0 * M_PI;
     wall_checking_done = false;
+    current_orientation.invalidate();
     // check if input ports are connected
-    if (!_sonar_input.connected())
+    if (!_sonarbeam_feature.connected())
     {
         std::cerr << TaskContext::getName() << ": " 
-                    << "Input port 'sonar_input' is not connected." << std::endl;
+                    << "Input port 'sonarbeam_feature' is not connected." << std::endl;
         return false;
     }
     if (!_orientation_sample.connected())
@@ -50,28 +51,15 @@ bool Task::startHook()
                     << "Input port 'orientation_sample' is not connected." << std::endl;
         return false;
     }
-    
-    // set up sonar beam processing
-    delete processing;
-    processing = new sonar_detectors::SonarBeamProcessing();
-    double beam_threshold_min = _beam_threshold_min.get();
-    double beam_threshold_max = _beam_threshold_max.get();
-    double min_response_value = _min_response_value.get();
+
     double wall_estimation_start_angle = _wall_estimation_start_angle.get();
     double wall_estimation_end_angle = _wall_estimation_end_angle.get();
+    bool bounded_input = false;
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
-    
-    if (beam_threshold_min < 0.0 || beam_threshold_max < 0.0 || beam_threshold_min >= beam_threshold_max)
+    if(wall_estimation_end_angle != wall_estimation_start_angle)
     {
-        std::cerr << "The sonar beam thresholds shouldn't be smaller then 0 and the "
-                     << "maximum threshold should be greater than the minimum one." << std::endl;
-        return false;
-    }
-    if (min_response_value < 0.0) 
-    {
-        std::cerr << "The minimum response value has to be greater than 0!" << std::endl;
-        return false;
+        bounded_input = true;
     }
     if (ransac_threshold < 0.0)
     {
@@ -85,18 +73,15 @@ bool Task::startHook()
         return false;
     }
     
-    processing->setBeamThreshold(beam_threshold_min);
-    processing->setMinResponseValue(min_response_value);
-    
     // set up wall estimation
     delete wallEstimation;
     wallEstimation = new sonar_detectors::WallEstimation();
     sonar_detectors::estimationSettings settings;
     settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
     settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
+    settings.boundedInput = bounded_input;
     wallEstimation->setSettings(settings);
     wallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
-    processing->addSonarEstimation(wallEstimation);
     
     // set up distance estimation
     delete distanceEstimation;
@@ -104,8 +89,8 @@ bool Task::startHook()
     sonar_detectors::estimationSettings dist_settings;
     dist_settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
     dist_settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
+    dist_settings.boundedInput = bounded_input;
     distanceEstimation->setSettings(dist_settings);
-    processing->addSonarEstimation(distanceEstimation);
 
     return true;
 }
@@ -114,16 +99,13 @@ void Task::updateHook()
 {
     States actual_state = RUNNING;
     
-    base::samples::SonarBeam sonarScan;
-    while (_sonar_input.read(sonarScan) == RTT::NewData) 
+    _orientation_sample.readNewest(current_orientation);
+    
+    base::samples::LaserScan feature;
+    while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
-        processing->updateSonarData(sonarScan);
-    }
-    base::samples::RigidBodyState orientation;
-    if (_orientation_sample.readNewest(orientation) == RTT::NewData) 
-    {
-        processing->updatePosition(base::Position(0,0,0));
-        processing->updateOrientation(orientation.orientation);
+        wallEstimation->updateFeature(feature);
+        distanceEstimation->updateFeature(feature);
     }
     
     base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
@@ -146,11 +128,11 @@ void Task::updateHook()
         double delta_rad = acos(relativeWallPos.x() / sqrt(pow(relativeWallPos.x(), 2) + pow(relativeWallPos.y(), 2)));
         if (relativeWallPos.y() < 0)
         {
-            current_wall_angle = orientation.getYaw() - delta_rad;
+            current_wall_angle = current_orientation.getYaw() - delta_rad;
         }
         else 
         {
-            current_wall_angle = orientation.getYaw() + delta_rad;
+            current_wall_angle = current_orientation.getYaw() + delta_rad;
         }
         // correct angles
         if (current_wall_angle > M_PI)
@@ -261,7 +243,9 @@ void Task::updateHook()
     }
     wallData.distance = distance_to_wall;
     wallData.relative_wall_position = relativeWallPos;
-    wallData.pointCloud.points = wallEstimation->getPointCloud();
+    std::list<base::Vector3d> feature_list = wallEstimation->getPointCloud();
+    wallData.pointCloud.points.resize(feature_list.size());
+    std::copy(feature_list.begin(), feature_list.end(), wallData.pointCloud.points.begin());
     wallData.pointCloud.time = base::Time::now();
     _wall_data.write(wallData);
     
@@ -289,11 +273,6 @@ void Task::stopHook()
 
 void Task::cleanupHook()
 {
-    if (processing)
-    {
-        delete processing;
-        processing = 0;
-    }
     if (wallEstimation)
     {
         delete wallEstimation;
