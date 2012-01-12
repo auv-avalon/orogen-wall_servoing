@@ -10,7 +10,7 @@ using namespace wall_servoing;
 
 Task::Task(std::string const& name, TaskCore::TaskState initial_state)
     : TaskBase(name, initial_state)
-    , wallEstimation(0), distanceEstimation(0)
+    , ransacWallEstimation(0), centerWallEstimation(0)
 {
     
 }
@@ -18,8 +18,6 @@ Task::Task(std::string const& name, TaskCore::TaskState initial_state)
 Task::~Task()
 {
 }
-
-
 
 /// The following lines are template definitions for the various state machine
 // hooks defined by Orocos::RTT. See Task.hpp for more detailed
@@ -33,22 +31,24 @@ Task::~Task()
 bool Task::startHook()
 {
     last_state = PRE_OPERATIONAL;
+    wall_state = NO_WALL_FOUND;
     checking_count = 0;
-    last_distance_to_wall = -1;
-    last_angle_to_wall = 2.0 * M_PI;
-    wall_checking_done = false;
+    last_distance_to_wall = -1.0;
+    last_angle_to_wall.rad = 2.0 * M_PI;
+    origin_wall_angle = 2.0 * M_PI;
+    do_wall_servoing = false;
     current_orientation.invalidate();
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
-        std::cerr << TaskContext::getName() << ": " 
-                    << "Input port 'sonarbeam_feature' is not connected." << std::endl;
+        RTT::log(RTT::Error) << TaskContext::getName() << ": " 
+                    << "Input port 'sonarbeam_feature' is not connected." << RTT::endlog();
         return false;
     }
     if (!_orientation_sample.connected())
     {
-        std::cerr << TaskContext::getName() << ": "
-                    << "Input port 'orientation_sample' is not connected." << std::endl;
+        RTT::log(RTT::Error) << TaskContext::getName() << ": "
+                    << "Input port 'orientation_sample' is not connected." << RTT::endlog();
         return false;
     }
 
@@ -63,34 +63,26 @@ bool Task::startHook()
     }
     if (ransac_threshold < 0.0)
     {
-        std::cerr << "The ransac threshold has to be greater than 0 for the wall estimation." << std::endl;
+        RTT::log(RTT::Error) << "The ransac threshold has to be greater than 0 for the wall estimation." << RTT::endlog();
         return false;
     }
     if (ransac_min_inliers > 1.0 || ransac_min_inliers < 0.0)
     {
-        std::cerr << "The ransac minimum inliers have to be between 0 and 1 for the wall estimation," 
-                     << "because this value is in percent." << std::endl;
+        RTT::log(RTT::Error) << "The ransac minimum inliers have to be between 0 and 1 for the wall estimation," 
+                     << "because this value is in percent." << RTT::endlog();
         return false;
     }
     
     // set up wall estimation
-    delete wallEstimation;
-    wallEstimation = new sonar_detectors::WallEstimation();
-    sonar_detectors::estimationSettings settings;
-    settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
-    settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
-    settings.boundedInput = bounded_input;
-    wallEstimation->setSettings(settings);
-    wallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
+    delete ransacWallEstimation;
+    ransacWallEstimation = new sonar_detectors::RansacWallEstimation();
+    ransacWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
+    ransacWallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
     
-    // set up distance estimation
-    delete distanceEstimation;
-    distanceEstimation = new sonar_detectors::DistanceEstimation();
-    sonar_detectors::estimationSettings dist_settings;
-    dist_settings.startAngle = base::Angle::fromRad(wall_estimation_start_angle);
-    dist_settings.endAngle = base::Angle::fromRad(wall_estimation_end_angle);
-    dist_settings.boundedInput = bounded_input;
-    distanceEstimation->setSettings(dist_settings);
+    delete centerWallEstimation;
+    centerWallEstimation = new sonar_detectors::CenterWallEstimation();
+    centerWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
+    centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
 
     return true;
 }
@@ -99,156 +91,159 @@ void Task::updateHook()
 {
     States actual_state = RUNNING;
     
+    // read input ports
     _orientation_sample.readNewest(current_orientation);
     
     base::samples::LaserScan feature;
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
-        wallEstimation->updateFeature(feature);
-        distanceEstimation->updateFeature(feature);
+        // feed estimators
+        //ransacWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+        centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
     }
     
-    base::Vector3d relativeWallPos = wallEstimation->getRelativeVirtualPoint();
-    double distance_to_wall = sonar_detectors::length(relativeWallPos);//distanceEstimation->getActualDistance();
-    Eigen::Vector3d relPos(0,0,0);
-    base::AUVPositionCommand positionCommand;
-    positionCommand.z = _fixed_depth.get();
-    if (relativeWallPos.x() == 0 && relativeWallPos.y() == 0)
+    // analyze wall position
+    //base::Vector3d wallPos = ransacWallEstimation->getWall().first;
+    base::Vector3d wallPos = centerWallEstimation->getWall().first;
+    double distance_to_wall = 0.0;
+    if (wallPos.x() == 0.0 && wallPos.y() == 0.0)
     {
-        actual_state = SEARCHING_WALL;
-        positionCommand.heading = 0;
-        if (!wall_checking_done)
-            checking_count = 0;
-        relPos.x() = _exploration_speed.get();
-        relPos.y() = 0;
+        wall_state = NO_WALL_FOUND;
     }
-    else 
+    else
     {
-        // calculate new relative heading
-        double delta_rad = acos(relativeWallPos.x() / sqrt(pow(relativeWallPos.x(), 2) + pow(relativeWallPos.y(), 2)));
-        if (relativeWallPos.y() < 0)
+        distance_to_wall = sonar_detectors::length(wallPos);
+        current_wall_angle = base::Angle::fromRad(atan2(wallPos.y(), wallPos.x()));
+        
+        if (last_distance_to_wall < 0)
         {
-            current_wall_angle = current_orientation.getYaw() - delta_rad;
+            last_distance_to_wall = distance_to_wall;
         }
-        else 
+        if(last_angle_to_wall.rad > M_PI)
         {
-            current_wall_angle = current_orientation.getYaw() + delta_rad;
+            last_angle_to_wall = current_wall_angle;
         }
-        // correct angles
-        if (current_wall_angle > M_PI)
-            current_wall_angle -= 2.0 * M_PI;
-        else if (current_wall_angle < -M_PI)
-            current_wall_angle += 2.0 * M_PI;
-            
-        // check for some samples if the wall distance seems to be stable
-        if (checking_count < checking_wall_samples)
+        
+        if(distance_to_wall < _minimal_wall_distance.get())
         {
-            actual_state = CHECKING_WALL;
-            origin_wall_angle = 2.0 * M_PI;
-            if (last_distance_to_wall < 0)
-            {
-                last_distance_to_wall = distance_to_wall;
-            }
-            if (last_angle_to_wall > M_PI)
-            {
-                last_angle_to_wall = current_wall_angle;
-            }
-            
-            if (last_distance_to_wall < distance_to_wall + check_distance_threshold &&
-                last_distance_to_wall > distance_to_wall - check_distance_threshold && 
-                last_angle_to_wall < current_wall_angle + check_angle_threshold &&
-                last_angle_to_wall > current_wall_angle - check_angle_threshold)
-            {
-                checking_count++;
-                last_distance_to_wall = distance_to_wall;
-                last_angle_to_wall = current_wall_angle;
-            }
-            else
-            {
-                checking_count = 0;
-                last_distance_to_wall = -1;
-                last_angle_to_wall = 2.0 * M_PI;
-            }
+            wall_state = WALL_TO_NEAR;
+        }   
+        else if (distance_to_wall > last_distance_to_wall + check_distance_threshold ||
+                 distance_to_wall < last_distance_to_wall - check_distance_threshold)
+        {
+            wall_state = DISTANCE_DIFF;
+        }
+        else if(current_wall_angle > base::Angle::fromRad(last_angle_to_wall.rad + check_angle_threshold) || 
+                current_wall_angle < base::Angle::fromRad(last_angle_to_wall.rad - check_angle_threshold) )
+        {
+            wall_state = ANGLE_DIFF;
         }
         else
         {
-            wall_checking_done = true;
-            actual_state = WALL_FOUND;
-            
-            if (relativeWallPos.y() < 0)
-            {
-                //values outside of -PI..PI will handled by the auv_rel_pos_controller
-                positionCommand.heading = _heading_modulation.get() - delta_rad;
-            }
-            else 
-            {
-                positionCommand.heading = _heading_modulation.get() + delta_rad;
-            }
-            
-            // save inital heading
-            if (origin_wall_angle > M_PI)
-            {
-                // save inital wall position
-                origin_wall_angle = current_wall_angle;
-                std::cerr << origin_wall_angle << std::endl;
-            }
-            else
-            {
-                // check for corner
-                if (std::abs(origin_wall_angle - current_wall_angle) > M_PI * 0.4)
-                {
-                    std::cerr << "found corner" << std::endl;
-                    actual_state = DETECTED_CORNER;
-                }
-                // check for lost wall position
-                if (std::abs(origin_wall_angle - current_wall_angle) > M_PI * 0.8)
-                {
-                    std::cerr << "lost position" << std::endl;
-                    std::cerr << "drive back " << std::endl;
-                }
-            }
-            
-            // do servoing if wall is near enough
-            if (relativeWallPos.x() < 2.0 * _wall_distance.get())
-            {
-                relPos.y() = _servoing_speed.get();
-            }
-            
-            // calculate new x
-            // (maybe use relativeWallPos.x() for average here)
-            if (distance_to_wall > 0)
-            {
-                relPos.x() = distance_to_wall - _wall_distance.get();
-            }
-            else
-            {
-                relPos.x() = 0;
-                actual_state = DISTANCE_ESTIMATOR_TIMEOUT;
-            }
+            wall_state = WALL_FOUND;
         }
     }
     
-    relPos = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relPos;
-    positionCommand.x = relPos.x();
-    positionCommand.y = relPos.y();
     
-    // write detection data
-    sonar_detectors::wallDetectionData wallData;
-    wallData.time = base::Time::now();
-    const std::vector< std::pair< base::Vector3d, base::Vector3d > > walls = wallEstimation->getWalls();
-    if (walls.size() >= 1)
+    if(checking_count >= checking_wall_samples)
+        do_wall_servoing = true;
+    else if(checking_count <= 0)
+        do_wall_servoing = false;
+        
+    
+    Eigen::Vector3d relative_target_position(0,0,0);
+    base::Angle relative_target_heading = base::Angle::fromRad(0.0);
+    
+    if(do_wall_servoing)
     {
-        wallData.wall.push_back(walls[0].first);
-        wallData.wall.push_back(walls[0].second);
+        actual_state = WALL_SERVOING;
+        switch(wall_state)
+        {
+            case NO_WALL_FOUND:
+                checking_count--;
+                break;
+            case WALL_TO_NEAR:
+            case DISTANCE_DIFF:
+            case ANGLE_DIFF:
+                checking_count = 0;
+                actual_state = SEARCHING_WALL;
+                break;
+            case WALL_FOUND:
+            {
+                // calculate ralative heading correction
+                base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw());
+                relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
+                
+                // do servoing if wall is near enough
+                if (distance_to_wall < 2.0 * _wall_distance.get())
+                {
+                    relative_target_position.y() = _servoing_speed.get();
+                }
+                
+                // calculate new x
+                relative_target_position.x() = distance_to_wall - _wall_distance.get();
+                
+                
+                // corner detection
+                if (origin_wall_angle > M_PI)
+                {
+                    // save inital wall angle
+                    origin_wall_angle = current_wall_angle.rad;
+                    std::cerr << origin_wall_angle << std::endl;
+                }
+                else if (std::abs(origin_wall_angle - current_wall_angle.rad) > M_PI * 0.45)
+                {
+                    RTT::log(RTT::Info) << "found corner" << RTT::endlog();
+                    actual_state = DETECTED_CORNER;
+                }
+                break;
+            }
+            default:
+                std::runtime_error("received unknown wall state!");
+            }
     }
-    wallData.distance = distance_to_wall;
-    wallData.relative_wall_position = relativeWallPos;
-    std::list<base::Vector3d> feature_list = wallEstimation->getPointCloud();
-    wallData.pointCloud.points.resize(feature_list.size());
-    std::copy(feature_list.begin(), feature_list.end(), wallData.pointCloud.points.begin());
-    wallData.pointCloud.time = base::Time::now();
-    _wall_data.write(wallData);
+    else
+    {
+        actual_state = SEARCHING_WALL;
+        switch(wall_state)
+        {
+            case NO_WALL_FOUND:
+                // TODO exploration mode after a while
+                checking_count = 0;
+                relative_target_position.x() = _exploration_speed.get();
+                last_distance_to_wall = -1;
+                last_angle_to_wall.rad = 2.0 * M_PI;
+                break;
+            case WALL_TO_NEAR:
+                // drive back
+                relative_target_position.x() = -_exploration_speed.get();
+                break;
+            case DISTANCE_DIFF:
+            case ANGLE_DIFF:
+                checking_count = 0;
+                last_distance_to_wall = distance_to_wall;
+                last_angle_to_wall = current_wall_angle;
+                break;
+            case WALL_FOUND:
+                checking_count++;
+                last_distance_to_wall = distance_to_wall;
+                last_angle_to_wall = current_wall_angle;
+                actual_state = CHECKING_WALL;
+                break;
+            default:
+                std::runtime_error("received unknown wall state!");
+        }
+    }
+
+    relative_target_position = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
+     // create relative position command
+    base::AUVPositionCommand positionCommand;
+    positionCommand.x = relative_target_position.x();
+    positionCommand.y = relative_target_position.y();
+    positionCommand.z = _fixed_depth.get();
+    positionCommand.heading = relative_target_heading.getRad();
+
     // write state if it has changed
     if(last_state != actual_state)
     {
@@ -259,6 +254,25 @@ void Task::updateHook()
     // write relative position command
     if (_position_command.connected())
         _position_command.write(positionCommand);
+    
+    // write detection debug data
+    if(_enable_debug_output.get())
+    {
+        sonar_detectors::wallServoingDebugData debugData;
+        debugData.time = base::Time::now();
+        //std::pair< base::Vector3d, base::Vector3d > wall = ransacWallEstimation->getWall();
+        std::pair< base::Vector3d, base::Vector3d > wall = centerWallEstimation->getWall();
+        debugData.wall.push_back(wall.first);
+        debugData.wall.push_back(wall.second);
+        debugData.wall_distance = distance_to_wall;
+        debugData.wall_angle = current_wall_angle.getRad();
+        debugData.relative_wall_position = current_orientation.orientation.conjugate() * wallPos;
+        //wallData.pointCloud.points = ransacWallEstimation->getPointCloud();
+        debugData.pointCloud.points = centerWallEstimation->getPointCloud();
+        debugData.pointCloud.time = base::Time::now();
+        
+        _wall_servoing_debug.write(debugData);
+    }
 }
 
 void Task::errorHook()
@@ -273,15 +287,15 @@ void Task::stopHook()
 
 void Task::cleanupHook()
 {
-    if (wallEstimation)
+    if (ransacWallEstimation)
     {
-        delete wallEstimation;
-        wallEstimation = 0;
+        delete ransacWallEstimation;
+        ransacWallEstimation = 0;
     }
-    if (distanceEstimation)
+    if (centerWallEstimation)
     {
-        delete distanceEstimation;
-        distanceEstimation = 0;
+        delete centerWallEstimation;
+        centerWallEstimation = 0;
     }
 }
 

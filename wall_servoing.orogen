@@ -1,7 +1,6 @@
 name "wall_servoing"
 
 import_types_from "base"
-import_types_from "avalon_base"
 import_types_from "SonarDetectorTaskTypes.hpp"
 using_library "sonar_detectors"
 
@@ -15,6 +14,8 @@ task_context "Task" do
         doc("maximal inlier distance to the model")
     property("wall_estimation_ransac_min_inliers","double", 0.7).
         doc("minimum count inliers of the point cloud in percent to be a valid model")
+    property("fading_out_factor","double", 0.05).
+        doc("fading out factor for the features in center wall estimator")
 
     # controller settings
     property("wall_distance", 'double', 2).
@@ -27,6 +28,8 @@ task_context "Task" do
         doc("the exploration will simply drive forward in the origin serviong direction")
     property("heading_modulation", "double", 0).
         doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall is in front")
+    property("minimal_wall_distance", "double", 0.75).
+        doc("the auv will move away from the wall if the wall is to near")
 
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
         doc("newest sonar feature")
@@ -35,11 +38,13 @@ task_context "Task" do
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
 
-    output_port('wall_data', 'sonar_detectors/wallDetectionData').
+    # debug
+    property("enable_debug_output", 'bool', false).
+        doc("enables the debug output port")
+    output_port('wall_servoing_debug', 'sonar_detectors/wallServoingDebugData').
         doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
-    runtime_states :WALL_FOUND, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER
-    error_states :DISTANCE_ESTIMATOR_TIMEOUT
+    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER
 
     port_driven "sonarbeam_feature"
 end

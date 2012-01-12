@@ -4,30 +4,41 @@
 #define WALL_SERVOING_TASK_TASK_HPP
 
 #include "wall_servoing/TaskBase.hpp"
-#include <sonar_detectors/WallEstimation.hpp>
-#include <sonar_detectors/DistanceEstimation.hpp>
+#include <sonar_detectors/RansacWallEstimation.hpp>
+#include <sonar_detectors/CenterWallEstimation.hpp>
 
 namespace wall_servoing {
+    
+    enum WallState
+    {
+        NO_WALL_FOUND = 0,
+        WALL_TO_NEAR,
+        DISTANCE_DIFF,
+        ANGLE_DIFF,
+        WALL_FOUND
+    };
+    
     class Task : public TaskBase
     {
 	friend class TaskBase;
     protected:
-        sonar_detectors::WallEstimation* wallEstimation;
-        sonar_detectors::DistanceEstimation* distanceEstimation;
+        sonar_detectors::RansacWallEstimation* ransacWallEstimation;
+        sonar_detectors::CenterWallEstimation* centerWallEstimation;
         base::samples::RigidBodyState current_orientation;
         States last_state;
+        WallState wall_state;
+        bool do_wall_servoing;
         int checking_count;
         const static int checking_wall_samples = 50;
         double last_distance_to_wall;
-        double last_angle_to_wall;
-        const static double check_distance_threshold = 0.5;
-        const static double check_angle_threshold = 0.2;
+        base::Angle last_angle_to_wall;
+        base::Angle current_wall_angle;
+        const static double check_distance_threshold = 1.0;
+        const static double check_angle_threshold = 0.25 * M_PI;
         double origin_wall_angle;
-        double current_wall_angle;
-        bool wall_checking_done;
 
     public:
-        Task(std::string const& name = "sonarvizkit::Task", TaskCore::TaskState initial_state = Stopped);
+        Task(std::string const& name = "wall_servoing::Task", TaskCore::TaskState initial_state = Stopped);
 
 	~Task();
 
