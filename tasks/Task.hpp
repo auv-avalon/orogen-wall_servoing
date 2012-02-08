@@ -6,6 +6,7 @@
 #include "wall_servoing/TaskBase.hpp"
 #include <sonar_detectors/RansacWallEstimation.hpp>
 #include <sonar_detectors/CenterWallEstimation.hpp>
+#include <sonar_detectors/SonarWallMap.hpp>
 
 namespace wall_servoing {
     
@@ -25,11 +26,14 @@ namespace wall_servoing {
         sonar_detectors::RansacWallEstimation* ransacWallEstimation;
         sonar_detectors::CenterWallEstimation* centerWallEstimation;
         base::samples::RigidBodyState current_orientation;
+        sonar_detectors::SonarWallMap wall_map;
         States last_state;
         WallState wall_state;
         bool do_wall_servoing;
         int checking_count;
+        int exploration_checking_count;
         const static int checking_wall_samples = 50;
+        const static int exploration_mode_samples = 100;
         double last_distance_to_wall;
         base::Angle last_angle_to_wall;
         base::Angle current_wall_angle;

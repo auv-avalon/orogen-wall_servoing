@@ -33,11 +33,13 @@ bool Task::startHook()
     last_state = PRE_OPERATIONAL;
     wall_state = NO_WALL_FOUND;
     checking_count = 0;
+    exploration_checking_count = 0;
     last_distance_to_wall = -1.0;
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
     do_wall_servoing = false;
     current_orientation.invalidate();
+    wall_map.setResolution(24);
     wall_servoing_direction = 0.0;
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
@@ -166,6 +168,8 @@ void Task::updateHook()
                 break;
             case WALL_FOUND:
             {
+                wall_map.updateAngle(current_wall_angle.getRad());
+                
                 // calculate ralative heading correction
                 base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
                 relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
@@ -199,15 +203,42 @@ void Task::updateHook()
     }
     else
     {
-        actual_state = SEARCHING_WALL;
+        actual_state = LOST_WALL;
+        // switch to exploration mode after some samples
+        if(wall_state == NO_WALL_FOUND)
+        {
+            exploration_checking_count++;
+        }
+        else
+        {
+            exploration_checking_count = 0;
+        }
         switch(wall_state)
         {
             case NO_WALL_FOUND:
-                // TODO exploration mode after a while
                 checking_count = 0;
-                relative_target_position.x() = _exploration_speed.get();
                 last_distance_to_wall = -1;
                 last_angle_to_wall.rad = 2.0 * M_PI;
+                
+                // exploration mode
+                if(exploration_checking_count >= exploration_mode_samples)
+                {
+                    exploration_checking_count = exploration_mode_samples;
+                    actual_state = SEARCHING_WALL;
+                    if(wall_map.isHealthy())
+                    {
+                        relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
+                        relative_target_heading = relative_target_heading + base::Angle::fromRad(_heading_modulation.get());
+                        if(std::abs(relative_target_heading.rad) <= check_angle_threshold)
+                        {
+                            relative_target_position.x() = _exploration_speed.get();
+                        }
+                    }
+                    else
+                    {
+                        relative_target_position.x() = _exploration_speed.get();
+                    }
+                }
                 break;
             case WALL_TO_NEAR:
                 // drive back

@@ -44,7 +44,7 @@ task_context "Task" do
     output_port('wall_servoing_debug', 'sonar_detectors/wallServoingDebugData').
         doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
-    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER
+    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL
 
     port_driven "sonarbeam_feature"
 end
