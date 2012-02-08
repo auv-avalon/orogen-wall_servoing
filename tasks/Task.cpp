@@ -73,7 +73,7 @@ bool Task::startHook()
     delete ransacWallEstimation;
     ransacWallEstimation = new sonar_detectors::RansacWallEstimation();
     ransacWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
-    ransacWallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers);
+    ransacWallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers, 1.0);
     
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
