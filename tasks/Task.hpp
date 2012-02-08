@@ -36,6 +36,7 @@ namespace wall_servoing {
         const static double check_distance_threshold = 1.0;
         const static double check_angle_threshold = 0.25 * M_PI;
         double origin_wall_angle;
+        double wall_servoing_direction;
 
     public:
         Task(std::string const& name = "wall_servoing::Task", TaskCore::TaskState initial_state = Stopped);

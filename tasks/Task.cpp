@@ -38,6 +38,7 @@ bool Task::startHook()
     origin_wall_angle = 2.0 * M_PI;
     do_wall_servoing = false;
     current_orientation.invalidate();
+    wall_servoing_direction = 0.0;
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -54,13 +55,8 @@ bool Task::startHook()
 
     double wall_estimation_start_angle = _wall_estimation_start_angle.get();
     double wall_estimation_end_angle = _wall_estimation_end_angle.get();
-    bool bounded_input = false;
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
-    if(wall_estimation_end_angle != wall_estimation_start_angle)
-    {
-        bounded_input = true;
-    }
     if (ransac_threshold < 0.0)
     {
         RTT::log(RTT::Error) << "The ransac threshold has to be greater than 0 for the wall estimation." << RTT::endlog();
@@ -171,7 +167,7 @@ void Task::updateHook()
             case WALL_FOUND:
             {
                 // calculate ralative heading correction
-                base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw());
+                base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
                 relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
                 
                 // do servoing if wall is near enough
@@ -189,7 +185,6 @@ void Task::updateHook()
                 {
                     // save inital wall angle
                     origin_wall_angle = current_wall_angle.rad;
-                    std::cerr << origin_wall_angle << std::endl;
                 }
                 else if (std::abs(origin_wall_angle - current_wall_angle.rad) > M_PI * 0.45)
                 {
@@ -234,7 +229,11 @@ void Task::updateHook()
                 std::runtime_error("received unknown wall state!");
         }
     }
+    
+    // apply wall servoing direction
+    relative_target_position = Eigen::AngleAxisd(wall_servoing_direction, Eigen::Vector3d::UnitZ()) * relative_target_position;
 
+    // apply heading modulation
     relative_target_position = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
      // create relative position command
