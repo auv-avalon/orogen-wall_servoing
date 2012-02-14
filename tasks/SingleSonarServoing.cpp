@@ -1,6 +1,6 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
-#include "Task.hpp"
+#include "SingleSonarServoing.hpp"
 #include <sonar_detectors/SonarDetectorTypes.hpp>
 #include <SonarDetectorTaskTypes.hpp>
 #include <sonar_detectors/SonarDetectorMath.hpp>
@@ -8,14 +8,14 @@
 
 using namespace wall_servoing;
 
-Task::Task(std::string const& name, TaskCore::TaskState initial_state)
-    : TaskBase(name, initial_state)
-    , ransacWallEstimation(0), centerWallEstimation(0)
+SingleSonarServoing::SingleSonarServoing(std::string const& name, TaskCore::TaskState initial_state)
+    : SingleSonarServoingBase(name, initial_state)
+    , ransacWallEstimation(0), centerWallEstimation(0), mWallEstimation(0)
 {
     
 }
 
-Task::~Task()
+SingleSonarServoing::~SingleSonarServoing()
 {
 }
 
@@ -28,7 +28,7 @@ Task::~Task()
 //     return true;
 // }
 
-bool Task::startHook()
+bool SingleSonarServoing::startHook()
 {
     last_state = PRE_OPERATIONAL;
     wall_state = NO_WALL_FOUND;
@@ -85,7 +85,7 @@ bool Task::startHook()
     return true;
 }
 
-void Task::updateHook()
+void SingleSonarServoing::updateHook()
 {
     States actual_state = RUNNING;
     
@@ -305,17 +305,17 @@ void Task::updateHook()
     }
 }
 
-void Task::errorHook()
+void SingleSonarServoing::errorHook()
 {
-    TaskBase::errorHook();
+    SingleSonarServoingBase::errorHook();
 }
 
-void Task::stopHook()
+void SingleSonarServoing::stopHook()
 {
-    TaskBase::stopHook();
+    SingleSonarServoingBase::stopHook();
 }
 
-void Task::cleanupHook()
+void SingleSonarServoing::cleanupHook()
 {
     if (ransacWallEstimation)
     {

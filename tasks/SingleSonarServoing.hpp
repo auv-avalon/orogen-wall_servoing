@@ -1,9 +1,9 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.hpp */
 
-#ifndef WALL_SERVOING_TASK_TASK_HPP
-#define WALL_SERVOING_TASK_TASK_HPP
+#ifndef WALL_SERVOING_SINGLESONARSERVOING_TASK_HPP
+#define WALL_SERVOING_SINGLESONARSERVOING_TASK_HPP
 
-#include "wall_servoing/TaskBase.hpp"
+#include "wall_servoing/SingleSonarServoingBase.hpp"
 #include <sonar_detectors/RansacWallEstimation.hpp>
 #include <sonar_detectors/CenterWallEstimation.hpp>
 #include <sonar_detectors/SonarWallMap.hpp>
@@ -19,9 +19,9 @@ namespace wall_servoing {
         WALL_FOUND
     };
     
-    class Task : public TaskBase
+    class SingleSonarServoing : public SingleSonarServoingBase
     {
-	friend class TaskBase;
+	friend class SingleSonarServoingBase;
     protected:
         sonar_detectors::RansacWallEstimation* ransacWallEstimation;
         sonar_detectors::CenterWallEstimation* centerWallEstimation;
@@ -43,9 +43,9 @@ namespace wall_servoing {
         double wall_servoing_direction;
 
     public:
-        Task(std::string const& name = "wall_servoing::Task", TaskCore::TaskState initial_state = Stopped);
+        SingleSonarServoing(std::string const& name = "wall_servoing::SingleSonarServoing", TaskCore::TaskState initial_state = Stopped);
 
-	~Task();
+	~SingleSonarServoing();
 
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the

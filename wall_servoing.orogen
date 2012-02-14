@@ -4,19 +4,7 @@ import_types_from "base"
 import_types_from "SonarDetectorTaskTypes.hpp"
 using_library "sonar_detectors"
 
-task_context "Task" do
-    # wall estimation settings
-    property("wall_estimation_start_angle","double", 0).
-        doc("start angle for the wall estimation")
-    property("wall_estimation_end_angle","double", 0).
-        doc("end angle for the wall estimation")
-    property("wall_estimation_ransac_threshold","double", 0.5).
-        doc("maximal inlier distance to the model")
-    property("wall_estimation_ransac_min_inliers","double", 0.7).
-        doc("minimum count inliers of the point cloud in percent to be a valid model")
-    property("fading_out_factor","double", 0.05).
-        doc("fading out factor for the features in center wall estimator")
-
+task_context "SonarServoing" do
     # controller settings
     property("wall_distance", 'double', 2).
         doc("reference distance to wall")
@@ -31,6 +19,26 @@ task_context "Task" do
     property("minimal_wall_distance", "double", 0.75).
         doc("the auv will move away from the wall if the wall is to near")
 
+    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL
+end
+
+task_context "SingleSonarServoing" do
+    subclasses "SonarServoing"
+    # wall estimation settings
+    property("wall_estimation_start_angle","double", 0).
+        doc("start angle for the wall estimation")
+    property("wall_estimation_end_angle","double", 0).
+        doc("end angle for the wall estimation")
+    property("wall_estimation_ransac_threshold","double", 0.5).
+        doc("maximal inlier distance to the model")
+    property("wall_estimation_ransac_min_inliers","double", 0.7).
+        doc("minimum count inliers of the point cloud in percent to be a valid model")
+    property("fading_out_factor","double", 0.05).
+        doc("fading out factor for the features in center wall estimator")
+    property("dbscan_epsilon","double", 0.15).
+        doc("epsilon in one meter distance of dbscan algorithm. epsilon will be increased linear by the distance of features").
+        doc("the default value 0.15 is abaut 1.75 times the angular resolution (default 0.08726646259971647 ~ 5°)")
+
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
         doc("newest sonar feature")
     input_port "orientation_sample", 'base::samples::RigidBodyState'
@@ -44,14 +52,26 @@ task_context "Task" do
     output_port('wall_servoing_debug', 'sonar_detectors/wallServoingDebugData').
         doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
-    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL
-
     port_driven "sonarbeam_feature"
+end
+
+task_context "DualSonarServoing" do
+    subclasses "SonarServoing"
+
+    input_port('sonarbeam_feature_front', '/base/samples/LaserScan').
+        doc("newest sonar feature")
+    input_port('sonarbeam_feature_rear', '/base/samples/LaserScan').
+        doc("newest sonar feature")
+    input_port "orientation_sample", 'base::samples::RigidBodyState'
+
+    output_port('position_command', '/base/AUVPositionCommand').
+        doc("relativ target position and heading")
+
+    port_driven "sonarbeam_feature_front", "sonarbeam_feature_rear"
 end
 
 
 deployment "wall_servoing" do
-    task("wall_servoing", "Task").
+    task("wall_servoing", "SingleSonarServoing").
         periodic(0.1)
 end
-
