@@ -2,6 +2,7 @@ name "wall_servoing"
 
 import_types_from "base"
 import_types_from "SonarDetectorTaskTypes.hpp"
+import_types_from "SonarTransformations.hpp"
 using_library "sonar_detectors"
 
 task_context "SonarServoing" do
