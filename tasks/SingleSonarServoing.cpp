@@ -10,7 +10,7 @@ using namespace wall_servoing;
 
 SingleSonarServoing::SingleSonarServoing(std::string const& name, TaskCore::TaskState initial_state)
     : SingleSonarServoingBase(name, initial_state)
-    , ransacWallEstimation(0), centerWallEstimation(0), mWallEstimation(0)
+    , centerWallEstimation(0), mWallEstimation(0)
 {
     
 }
@@ -72,15 +72,15 @@ bool SingleSonarServoing::startHook()
     }
     
     // set up wall estimation
-    delete ransacWallEstimation;
-    ransacWallEstimation = new sonar_detectors::RansacWallEstimation();
-    ransacWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
-    ransacWallEstimation->setRansacParameters(ransac_threshold, ransac_min_inliers, 1.0);
-    
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
     centerWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
+    
+    delete mWallEstimation;
+    mWallEstimation = new sonar_detectors::MWallEstimation();
+    mWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
+    mWallEstimation->setParameters(ransac_threshold, ransac_min_inliers, _dbscan_epsilon.get(), 0.08726646259971647);
 
     return true;
 }
@@ -96,12 +96,11 @@ void SingleSonarServoing::updateHook()
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
         // feed estimators
-        //ransacWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+        mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
     }
     
     // analyze wall position
-    //base::Vector3d wallPos = ransacWallEstimation->getWall().first;
     base::Vector3d wallPos = centerWallEstimation->getWall().first;
     double distance_to_wall = 0.0;
     if (wallPos.x() == 0.0 && wallPos.y() == 0.0)
@@ -290,14 +289,12 @@ void SingleSonarServoing::updateHook()
     {
         sonar_detectors::wallServoingDebugData debugData;
         debugData.time = base::Time::now();
-        //std::pair< base::Vector3d, base::Vector3d > wall = ransacWallEstimation->getWall();
         std::pair< base::Vector3d, base::Vector3d > wall = centerWallEstimation->getWall();
         debugData.wall.push_back(wall.first);
         debugData.wall.push_back(wall.second);
         debugData.wall_distance = distance_to_wall;
         debugData.wall_angle = current_wall_angle.getRad();
         debugData.relative_wall_position = current_orientation.orientation.conjugate() * wallPos;
-        //wallData.pointCloud.points = ransacWallEstimation->getPointCloud();
         debugData.pointCloud.points = centerWallEstimation->getPointCloud();
         debugData.pointCloud.time = base::Time::now();
         
@@ -317,10 +314,10 @@ void SingleSonarServoing::stopHook()
 
 void SingleSonarServoing::cleanupHook()
 {
-    if (ransacWallEstimation)
+    if (mWallEstimation)
     {
-        delete ransacWallEstimation;
-        ransacWallEstimation = 0;
+        delete mWallEstimation;
+        mWallEstimation = 0;
     }
     if (centerWallEstimation)
     {

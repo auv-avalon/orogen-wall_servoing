@@ -4,8 +4,8 @@
 #define WALL_SERVOING_SINGLESONARSERVOING_TASK_HPP
 
 #include "wall_servoing/SingleSonarServoingBase.hpp"
-#include <sonar_detectors/RansacWallEstimation.hpp>
 #include <sonar_detectors/CenterWallEstimation.hpp>
+#include <sonar_detectors/MWallEstimation.hpp>
 #include <sonar_detectors/SonarWallMap.hpp>
 
 namespace wall_servoing {
@@ -23,8 +23,8 @@ namespace wall_servoing {
     {
 	friend class SingleSonarServoingBase;
     protected:
-        sonar_detectors::RansacWallEstimation* ransacWallEstimation;
         sonar_detectors::CenterWallEstimation* centerWallEstimation;
+        sonar_detectors::MWallEstimation* mWallEstimation;
         base::samples::RigidBodyState current_orientation;
         sonar_detectors::SonarWallMap wall_map;
         States last_state;
