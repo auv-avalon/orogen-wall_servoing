@@ -59,7 +59,7 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     motion_control = Orocos::TaskContext.get 'motion_control'
 
     ## connections
-    motion_control.disconnect_all
+    motion_control.motion_commands.disconnect_all
 
     sonar.sonar_beam.connect_to feature_estimator.sonar_input
     feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature
