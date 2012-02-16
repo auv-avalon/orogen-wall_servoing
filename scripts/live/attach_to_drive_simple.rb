@@ -55,7 +55,17 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     ##
 
     sonar = Orocos::TaskContext.get 'sonar'
-    orientation_estimator = Orocos::TaskContext.get 'orientation_estimator'
+    sonar.stop
+    config = sonar.config
+    config.cont = 0
+    config.maximumDistance = 5.0
+    config.leftLimit.rad = -0.785398163
+    config.rightLimit.rad = 0.785398163
+    sonar.config = config    
+    sonar.configure
+    sonar.start
+
+    orientation_estimator = Orocos::TaskContext.get 'state_estimator'
     motion_control = Orocos::TaskContext.get 'motion_control'
 
     ## connections
