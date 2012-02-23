@@ -1,4 +1,3 @@
-require 'vizkit'
 require 'orocos'
 include Orocos
 
