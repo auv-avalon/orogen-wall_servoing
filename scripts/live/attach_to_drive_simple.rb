@@ -11,15 +11,15 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     ## wall_servoing
     wall_servoing = Orocos::TaskContext.get 'wall_servoing'
     # wall estimation settings
-    wall_servoing.wall_estimation_start_angle = 0.25 * Math::PI
+    wall_servoing.wall_estimation_start_angle = 0.35 * Math::PI
     wall_servoing.wall_estimation_end_angle = -0.35 * Math::PI
     wall_servoing.wall_estimation_ransac_threshold = 0.5
     wall_servoing.wall_estimation_ransac_min_inliers = 0.85
     wall_servoing.dbscan_epsilon = 0.08726646259971647 * 1.5
     wall_servoing.fading_out_factor = 0.02
     # controller settings
-    wall_servoing.wall_distance = 3.0
-    wall_servoing.fixed_depth = -1.0
+    wall_servoing.wall_distance = 2.0
+    wall_servoing.fixed_depth = -1.1
     wall_servoing.servoing_speed = 0.5
     wall_servoing.exploration_speed = 0.1
     wall_servoing.heading_modulation = 0.4#0.78538 # 1/4 PI
@@ -55,30 +55,29 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     ##
 
     sonar = Orocos::TaskContext.get 'sonar'
-    sonar.stop
-    config = sonar.config
-    config.cont = 0
-    config.maximumDistance = 5.0
-    config.leftLimit.rad = -0.785398163
-    config.rightLimit.rad = 0.785398163
-    sonar.config = config    
-    sonar.configure
-    sonar.start
+    #sonar_config_writer = sonar.config_port.writer
+    #config = sonar.config
+    #config.cont = 0
+    #config.maximumDistance = 5.0
+    #config.leftLimit.rad = -0.785398163
+    #config.rightLimit.rad = 0.785398163
+    #sonar_config_writer.write(config)
 
     orientation_estimator = Orocos::TaskContext.get 'state_estimator'
     motion_control = Orocos::TaskContext.get 'motion_control'
+    motion_control.timeout = 0
 
     ## connections
     motion_control.motion_commands.disconnect_all
 
-    sonar.sonar_beam.connect_to feature_estimator.sonar_input
+    sonar.BaseScan.connect_to feature_estimator.sonar_input
     feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature
     wall_servoing.position_command.connect_to relPosController.position_command
     relPosController.motion_command.connect_to motion_control.motion_commands
 
-    orientation_estimator.pose_samples.connect_to wall_servoing.orientation_sample
-    orientation_estimator.pose_samples.connect_to relPosController.position_sample
-    orientation_estimator.pose_samples.connect_to feature_estimator.orientation_sample
+    orientation_estimator.orientation_samples.connect_to wall_servoing.orientation_sample
+    orientation_estimator.orientation_samples.connect_to relPosController.position_sample
+    orientation_estimator.orientation_samples.connect_to feature_estimator.orientation_sample
     ##
 
     ## start tasks
@@ -90,4 +89,6 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     feature_estimator.start
     ##
 
+    loop do 
+    end
 end
