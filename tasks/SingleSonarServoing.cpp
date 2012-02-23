@@ -34,6 +34,7 @@ bool SingleSonarServoing::startHook()
     wall_state = NO_WALL_FOUND;
     checking_count = 0;
     exploration_checking_count = 0;
+    detected_corner_count = 0;
     last_distance_to_wall = -1.0;
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
@@ -130,8 +131,7 @@ void SingleSonarServoing::updateHook()
         {
             wall_state = DISTANCE_DIFF;
         }
-        else if(current_wall_angle > base::Angle::fromRad(last_angle_to_wall.rad + check_angle_threshold) || 
-                current_wall_angle < base::Angle::fromRad(last_angle_to_wall.rad - check_angle_threshold) )
+        else if(check_angle_threshold < std::abs(base::Angle::fromRad(last_angle_to_wall.rad - current_wall_angle.rad).getRad()) )
         {
             wall_state = ANGLE_DIFF;
         }
@@ -169,6 +169,8 @@ void SingleSonarServoing::updateHook()
             case WALL_FOUND:
             {
                 wall_map.updateAngle(current_wall_angle.getRad());
+                last_distance_to_wall = distance_to_wall;
+                last_angle_to_wall = current_wall_angle;
                 
                 // calculate ralative heading correction
                 base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
