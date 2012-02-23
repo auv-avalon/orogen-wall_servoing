@@ -39,6 +39,7 @@ bool SingleSonarServoing::startHook()
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
     do_wall_servoing = false;
+    do_heading_modulation = false;
     current_orientation.invalidate();
     wall_map.setResolution(24);
     wall_servoing_direction = 0.0;
@@ -174,12 +175,13 @@ void SingleSonarServoing::updateHook()
                 
                 // calculate ralative heading correction
                 base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
-                relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
                 
                 // do servoing if wall is near enough
                 if (distance_to_wall < 2.0 * _wall_distance.get())
                 {
                     relative_target_position.y() = _servoing_speed.get();
+                    relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
+                    do_heading_modulation = true;
                 }
                 
                 // calculate new x
@@ -270,7 +272,8 @@ void SingleSonarServoing::updateHook()
     relative_target_position = Eigen::AngleAxisd(wall_servoing_direction, Eigen::Vector3d::UnitZ()) * relative_target_position;
 
     // apply heading modulation
-    relative_target_position = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
+    if(do_heading_modulation)
+        relative_target_position = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
      // create relative position command
     base::AUVPositionCommand positionCommand;

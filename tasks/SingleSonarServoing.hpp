@@ -30,6 +30,7 @@ namespace wall_servoing {
         States last_state;
         WallState wall_state;
         bool do_wall_servoing;
+        bool do_heading_modulation;
         int checking_count;
         int exploration_checking_count;
         int detected_corner_count;
