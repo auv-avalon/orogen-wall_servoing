@@ -154,6 +154,7 @@ void SingleSonarServoing::updateHook()
     if(do_wall_servoing)
     {
         actual_state = WALL_SERVOING;
+        exploration_checking_count = 0;
         switch(wall_state)
         {
             case NO_WALL_FOUND:
@@ -210,44 +211,19 @@ void SingleSonarServoing::updateHook()
     {
         actual_state = LOST_WALL;
         // switch to exploration mode after some samples
-        if(wall_state == NO_WALL_FOUND)
-        {
-            exploration_checking_count++;
-        }
-        else
-        {
-            exploration_checking_count = 0;
-        }
+        exploration_checking_count++;
+        
         switch(wall_state)
         {
             case NO_WALL_FOUND:
                 checking_count = 0;
                 last_distance_to_wall = -1;
                 last_angle_to_wall.rad = 2.0 * M_PI;
-                
-                // exploration mode
-                if(exploration_checking_count >= exploration_mode_samples)
-                {
-                    exploration_checking_count = exploration_mode_samples;
-                    actual_state = SEARCHING_WALL;
-                    if(wall_map.isHealthy())
-                    {
-                        relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
-                        relative_target_heading = relative_target_heading + base::Angle::fromRad(_heading_modulation.get());
-                        if(std::abs(relative_target_heading.rad) <= check_angle_threshold)
-                        {
-                            relative_target_position.x() = _exploration_speed.get();
-                        }
-                    }
-                    else
-                    {
-                        relative_target_position.x() = _exploration_speed.get();
-                    }
-                }
                 break;
             case WALL_TO_NEAR:
                 // drive back
-                relative_target_position.x() = -_exploration_speed.get();
+                exploration_checking_count--;
+                relative_target_position.x() = -_exploration_speed.get() * 2.0;
                 break;
             case DISTANCE_DIFF:
             case ANGLE_DIFF:
@@ -257,12 +233,34 @@ void SingleSonarServoing::updateHook()
                 break;
             case WALL_FOUND:
                 checking_count++;
+                exploration_checking_count--;
                 last_distance_to_wall = distance_to_wall;
                 last_angle_to_wall = current_wall_angle;
                 actual_state = CHECKING_WALL;
                 break;
             default:
                 std::runtime_error("received unknown wall state!");
+        }
+        
+        // exploration mode
+        if(exploration_checking_count >= exploration_mode_samples)
+        {
+            exploration_checking_count = exploration_mode_samples;
+            actual_state = SEARCHING_WALL;
+            if(wall_map.isHealthy())
+            {
+                relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
+                relative_target_heading = relative_target_heading + base::Angle::fromRad(_heading_modulation.get());
+                relative_target_position.x() = -_exploration_speed.get() * 2.0;
+                if(std::abs(relative_target_heading.rad) <= 0.1 * M_PI)
+                {
+                    relative_target_position.x() = _exploration_speed.get();
+                }
+            }
+            else
+            {
+                relative_target_position.x() = _exploration_speed.get();
+            }
         }
     }
     
