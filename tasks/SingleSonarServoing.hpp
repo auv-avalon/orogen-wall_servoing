@@ -32,6 +32,7 @@ namespace wall_servoing {
         bool do_wall_servoing;
         int checking_count;
         int exploration_checking_count;
+        int detected_corner_count;
         const static int checking_wall_samples = 50;
         const static int exploration_mode_samples = 100;
         double last_distance_to_wall;

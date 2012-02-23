@@ -189,10 +189,16 @@ void SingleSonarServoing::updateHook()
                     // save inital wall angle
                     origin_wall_angle = current_wall_angle.rad;
                 }
-                else if (std::abs(origin_wall_angle - current_wall_angle.rad) > M_PI * 0.45)
+                else if (std::abs(base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad()) > M_PI * 0.45)
                 {
+                    detected_corner_count++;
                     RTT::log(RTT::Info) << "found corner" << RTT::endlog();
                     actual_state = DETECTED_CORNER;
+                    if(detected_corner_count >= 10)
+                    {
+                        detected_corner_count = 0;
+                        origin_wall_angle = current_wall_angle.rad;
+                    }
                 }
                 break;
             }
