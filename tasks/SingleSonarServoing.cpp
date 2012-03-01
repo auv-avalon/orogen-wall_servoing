@@ -213,7 +213,10 @@ void SingleSonarServoing::updateHook()
     {
         actual_state = LOST_WALL;
         // switch to exploration mode after some samples
-        exploration_checking_count++;
+        if(exploration_checking_count < exploration_mode_samples)
+        {
+            exploration_checking_count++;
+        }
         
         switch(wall_state)
         {
