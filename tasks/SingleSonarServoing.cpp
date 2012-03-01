@@ -41,10 +41,8 @@ bool SingleSonarServoing::startHook()
     wall_servoing = false;
     align_origin_position = false;
     align_origin_heading = false;
-    do_heading_modulation = false;
     current_orientation.invalidate();
     wall_map.setResolution(24);
-    wall_servoing_direction = 0.0;
     detected_corner_msg = false;
     start_corner_msg = base::Time::now();
     // check if input ports are connected
@@ -60,9 +58,7 @@ bool SingleSonarServoing::startHook()
                     << "Input port 'orientation_sample' is not connected." << RTT::endlog();
         return false;
     }
-
-    double wall_estimation_start_angle = _wall_estimation_start_angle.get();
-    double wall_estimation_end_angle = _wall_estimation_end_angle.get();
+    
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
     if (ransac_threshold < 0.0)
@@ -80,12 +76,10 @@ bool SingleSonarServoing::startHook()
     // set up wall estimation
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
-    centerWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
     
     delete mWallEstimation;
     mWallEstimation = new sonar_detectors::MWallEstimation();
-    mWallEstimation->setEstimationZone(base::Angle::fromRad(wall_estimation_start_angle), base::Angle::fromRad(wall_estimation_end_angle));
     mWallEstimation->setParameters(ransac_threshold, ransac_min_inliers, _dbscan_epsilon.get(), 0.08726646259971647);
 
     return true;
@@ -102,7 +96,13 @@ void SingleSonarServoing::updateHook()
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
         // feed estimators
+        double supposed_wall_direction = do_wall_servoing ? _servoing_wall_direction.get() : _inital_wall_direction.get();
+        base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
+        base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
+        centerWallEstimation->setEstimationZone(left_limit, right_limit);
+        centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+        mWallEstimation->setEstimationZone(left_limit, right_limit);
         mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
     }
     
@@ -186,16 +186,12 @@ void SingleSonarServoing::updateHook()
                 last_distance_to_wall = distance_to_wall;
                 last_angle_to_wall = current_wall_angle;
                 
+                // do servoing
+                relative_target_position.y() = _servoing_speed.get();
                 // calculate ralative heading correction
-                base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
-                
-                    relative_target_position.y() = _servoing_speed.get();
-                    relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
-                    do_heading_modulation = true;
-                
+                relative_target_heading = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + _servoing_wall_direction.get());
                 // calculate new x
                 relative_target_position.x() = distance_to_wall - _wall_distance.get();
-                
                 
                 // corner detection
                 if (origin_wall_angle > M_PI)
@@ -312,8 +308,7 @@ void SingleSonarServoing::updateHook()
             actual_state = SEARCHING_WALL;
             if(do_wall_servoing && wall_map.isHealthy())
             {
-                relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
-                relative_target_heading = relative_target_heading + base::Angle::fromRad(_heading_modulation.get());
+                relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + _servoing_wall_direction.get());
                 relative_target_position.x() = -_exploration_speed.get() * 2.0;
                 if(std::abs(relative_target_heading.rad) <= 0.1 * M_PI)
                 {
@@ -329,11 +324,9 @@ void SingleSonarServoing::updateHook()
     
     // apply wall servoing direction
     if(do_wall_servoing)
-    relative_target_position = Eigen::AngleAxisd(wall_servoing_direction, Eigen::Vector3d::UnitZ()) * relative_target_position;
-
-    // apply heading modulation
-    if(do_heading_modulation)
-        relative_target_position = Eigen::AngleAxisd(-_heading_modulation.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
+        relative_target_position = Eigen::AngleAxisd(_servoing_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
+    else
+        relative_target_position = Eigen::AngleAxisd(_inital_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
      // create relative position command
     base::AUVPositionCommand positionCommand;

@@ -31,7 +31,6 @@ namespace wall_servoing {
         WallState wall_state;
         
         bool do_wall_servoing;
-        bool do_heading_modulation;
         bool wall_servoing;
         bool align_origin_position;
         bool align_origin_heading;
@@ -51,7 +50,6 @@ namespace wall_servoing {
         const static double check_distance_threshold = 1.0;
         const static double check_angle_threshold = 0.25 * M_PI;
         
-        double wall_servoing_direction;
 
     public:
         SingleSonarServoing(std::string const& name = "wall_servoing::SingleSonarServoing", TaskCore::TaskState initial_state = Stopped);

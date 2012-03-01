@@ -7,16 +7,18 @@ using_library "sonar_detectors"
 
 task_context "SonarServoing" do
     # controller settings
-    property("wall_distance", 'double', 2).
+    property("wall_distance", 'double', 2.0).
         doc("reference distance to wall")
-    property("fixed_depth", 'double', -1).
+    property("fixed_depth", 'double', -1.0).
         doc("reference depth")
-    property("servoing_speed", "double", 0).
+    property("servoing_speed", "double", 0.0).
         doc("set distance for the y axis, witch will result in a certain speed")
     property("exploration_speed", "double", 0.2).
         doc("the exploration will simply drive forward in the origin serviong direction")
-    property("heading_modulation", "double", 0).
-        doc("modulates the heading to the wall with a fixed degree, default is 0 than the wall is in front")
+    property("servoing_wall_direction", "double", 0.0).
+        doc("in this direction the wall be if the wall servoing is performed, default is 0 than the wall is in front")
+    property("inital_wall_direction", "double", 0.0).
+        doc("the inital heading of avalon to the wall, default is 0 than the wall is in front")
     property("minimal_wall_distance", "double", 0.75).
         doc("the auv will move away from the wall if the wall is to near")
 
@@ -26,10 +28,10 @@ end
 task_context "SingleSonarServoing" do
     subclasses "SonarServoing"
     # wall estimation settings
-    property("wall_estimation_start_angle","double", 0).
-        doc("start angle for the wall estimation")
-    property("wall_estimation_end_angle","double", 0).
-        doc("end angle for the wall estimation")
+    property("left_opening_angle","double", 0.0).
+        doc("angular range of the left part of the wall, always positive")
+    property("right_opening_angle","double", 0.0).
+        doc("angular range of the right part of the wall, always positive")
     property("wall_estimation_ransac_threshold","double", 0.5).
         doc("maximal inlier distance to the model")
     property("wall_estimation_ransac_min_inliers","double", 0.7).
