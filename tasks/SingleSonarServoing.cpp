@@ -38,6 +38,9 @@ bool SingleSonarServoing::startHook()
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
     do_wall_servoing = false;
+    wall_servoing = false;
+    align_origin_position = false;
+    align_origin_heading = false;
     do_heading_modulation = false;
     current_orientation.invalidate();
     wall_map.setResolution(24);
@@ -145,15 +148,24 @@ void SingleSonarServoing::updateHook()
     
     
     if(checking_count >= checking_wall_samples)
-        do_wall_servoing = true;
+    {
+        if(do_wall_servoing)
+            wall_servoing = true;
+        else
+            align_origin_position = true;
+            
+    }
     else if(checking_count <= 0)
-        do_wall_servoing = false;
-        
+    {
+        wall_servoing = false;
+        align_origin_position = false;
+    }
+    
     
     Eigen::Vector3d relative_target_position(0,0,0);
     base::Angle relative_target_heading = base::Angle::fromRad(0.0);
     
-    if(do_wall_servoing)
+    if(wall_servoing)
     {
         actual_state = WALL_SERVOING;
         exploration_checking_count = 0;
@@ -166,7 +178,7 @@ void SingleSonarServoing::updateHook()
             case DISTANCE_DIFF:
             case ANGLE_DIFF:
                 checking_count = 0;
-                actual_state = SEARCHING_WALL;
+                actual_state = LOST_WALL;
                 break;
             case WALL_FOUND:
             {
@@ -177,13 +189,9 @@ void SingleSonarServoing::updateHook()
                 // calculate ralative heading correction
                 base::Angle delta_rad = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
                 
-                // do servoing if wall is near enough
-                if (distance_to_wall < 2.0 * _wall_distance.get())
-                {
                     relative_target_position.y() = _servoing_speed.get();
                     relative_target_heading = base::Angle::fromRad(_heading_modulation.get()) + delta_rad;
                     do_heading_modulation = true;
-                }
                 
                 // calculate new x
                 relative_target_position.x() = distance_to_wall - _wall_distance.get();
@@ -208,6 +216,56 @@ void SingleSonarServoing::updateHook()
             default:
                 std::runtime_error("received unknown wall state!");
             }
+    }
+    else if(align_origin_position)
+    {
+        actual_state = ORIGIN_ALIGNMENT;
+        exploration_checking_count = 0;
+        
+        // align heading
+        if(align_origin_heading)
+        {
+            base::Angle angle_diff = last_angle_to_wall - base::Angle::fromRad(current_orientation.getYaw() + _servoing_wall_direction.get());
+            if(std::abs(angle_diff.rad) > 0.1)
+                relative_target_heading = angle_diff;
+            else
+            {
+                align_origin_heading = false;
+                align_origin_position = false;
+                do_wall_servoing = true;
+            }
+        }
+        else
+        {
+            switch(wall_state)
+            {
+                case NO_WALL_FOUND:
+                    checking_count--;
+                    break;
+                case WALL_TO_NEAR:
+                case DISTANCE_DIFF:
+                case ANGLE_DIFF:
+                    checking_count = 0;
+                    actual_state = LOST_WALL;
+                    break;
+                case WALL_FOUND:
+                {
+                    last_distance_to_wall = distance_to_wall;
+                    last_angle_to_wall = current_wall_angle;
+                    
+                    // align position
+                    double distance_diff = distance_to_wall - _wall_distance.get();
+                    if(distance_diff > 0.5)
+                        relative_target_position.x() = distance_diff;
+                    else
+                        align_origin_heading = true;
+                    
+                    break;
+                }
+                default:
+                    std::runtime_error("received unknown wall state!"); 
+            }
+        }
     }
     else
     {
@@ -252,7 +310,7 @@ void SingleSonarServoing::updateHook()
         {
             exploration_checking_count = exploration_mode_samples;
             actual_state = SEARCHING_WALL;
-            if(wall_map.isHealthy())
+            if(do_wall_servoing && wall_map.isHealthy())
             {
                 relative_target_heading = wall_map.getAngleForBestWall() - base::Angle::fromRad(current_orientation.getYaw() + wall_servoing_direction);
                 relative_target_heading = relative_target_heading + base::Angle::fromRad(_heading_modulation.get());
@@ -270,6 +328,7 @@ void SingleSonarServoing::updateHook()
     }
     
     // apply wall servoing direction
+    if(do_wall_servoing)
     relative_target_position = Eigen::AngleAxisd(wall_servoing_direction, Eigen::Vector3d::UnitZ()) * relative_target_position;
 
     // apply heading modulation

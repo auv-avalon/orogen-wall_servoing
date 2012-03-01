@@ -29,20 +29,28 @@ namespace wall_servoing {
         sonar_detectors::SonarWallMap wall_map;
         States last_state;
         WallState wall_state;
+        
         bool do_wall_servoing;
         bool do_heading_modulation;
+        bool wall_servoing;
+        bool align_origin_position;
+        bool align_origin_heading;
+        
         bool detected_corner_msg;
         base::Time start_corner_msg;
+        double origin_wall_angle;
+        
         int checking_count;
         int exploration_checking_count;
         const static int checking_wall_samples = 50;
         const static int exploration_mode_samples = 200;
+        
         double last_distance_to_wall;
         base::Angle last_angle_to_wall;
         base::Angle current_wall_angle;
         const static double check_distance_threshold = 1.0;
         const static double check_angle_threshold = 0.25 * M_PI;
-        double origin_wall_angle;
+        
         double wall_servoing_direction;
 
     public:
