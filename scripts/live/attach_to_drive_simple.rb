@@ -10,8 +10,8 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     ## wall_servoing
     wall_servoing = Orocos::TaskContext.get 'wall_servoing'
     # wall estimation settings
-    wall_servoing.wall_estimation_start_angle = 0.35 * Math::PI
-    wall_servoing.wall_estimation_end_angle = -0.35 * Math::PI
+    wall_servoing.left_opening_angle = 0.35 * Math::PI
+    wall_servoing.right_opening_angle = 0.35 * Math::PI
     wall_servoing.wall_estimation_ransac_threshold = 0.5
     wall_servoing.wall_estimation_ransac_min_inliers = 0.85
     wall_servoing.dbscan_epsilon = 0.08726646259971647 * 1.5
@@ -21,7 +21,8 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
     wall_servoing.fixed_depth = -1.1
     wall_servoing.servoing_speed = 0.5
     wall_servoing.exploration_speed = 0.1
-    wall_servoing.heading_modulation = 0.4#0.78538 # 1/4 PI
+    wall_servoing.servoing_wall_direction = -0.4#0.78538 # 1/4 PI
+    wall_servoing.inital_wall_direction = 0.0
     ##
 
     ## feature_estimator

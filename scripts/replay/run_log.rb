@@ -16,8 +16,8 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
     #feature_estimator.derivative_history_length = 1
 
     # wall estimation settings
-    sonardetector.wall_estimation_start_angle = Math::PI * 0.25
-    sonardetector.wall_estimation_end_angle = -Math::PI * 0.25
+    sonardetector.left_opening_angle = Math::PI * 0.35
+    sonardetector.right_opening_angle = Math::PI * 0.25
     sonardetector.wall_estimation_ransac_threshold = 0.2
     sonardetector.wall_estimation_ransac_min_inliers = 0.8
     sonardetector.dbscan_epsilon = 0.08726646259971647 * 1.5
@@ -29,7 +29,8 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
     sonardetector.fixed_depth = -1.5
     sonardetector.servoing_speed = 0.5
     sonardetector.exploration_speed = 0.1
-    sonardetector.heading_modulation = 0.41
+    sonardetector.servoing_wall_direction = -0.4
+    sonardetector.inital_wall_direction = 0.0
 
     sonar_port.connect_to feature_estimator.sonar_input
     feature_estimator.new_feature.connect_to sonardetector.sonarbeam_feature
