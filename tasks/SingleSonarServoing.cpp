@@ -34,7 +34,6 @@ bool SingleSonarServoing::startHook()
     wall_state = NO_WALL_FOUND;
     checking_count = 0;
     exploration_checking_count = 0;
-    detected_corner_count = 0;
     last_distance_to_wall = -1.0;
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
@@ -43,6 +42,8 @@ bool SingleSonarServoing::startHook()
     current_orientation.invalidate();
     wall_map.setResolution(24);
     wall_servoing_direction = 0.0;
+    detected_corner_msg = false;
+    start_corner_msg = base::Time::now();
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -194,16 +195,13 @@ void SingleSonarServoing::updateHook()
                     // save inital wall angle
                     origin_wall_angle = current_wall_angle.rad;
                 }
-                else if (std::abs(base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad()) > M_PI * 0.45)
+                else if(std::abs(base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad()) >= M_PI * 0.45)
                 {
-                    detected_corner_count++;
-                    RTT::log(RTT::Info) << "found corner" << RTT::endlog();
-                    actual_state = DETECTED_CORNER;
-                    if(detected_corner_count >= 10)
-                    {
-                        detected_corner_count = 0;
-                        origin_wall_angle = current_wall_angle.rad;
-                    }
+                    // save new wall angle
+                    origin_wall_angle = base::Angle::fromRad(current_wall_angle.rad + copysign(0.05 * M_PI, base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad())).getRad();
+                    // show detected corner msg and state
+                    detected_corner_msg = true;
+                    start_corner_msg = base::Time::now();
                 }
                 break;
             }
@@ -281,6 +279,17 @@ void SingleSonarServoing::updateHook()
     positionCommand.y = relative_target_position.y();
     positionCommand.z = _fixed_depth.get();
     positionCommand.heading = relative_target_heading.getRad();
+    
+    // print detected corner msg for 2 seconds
+    if(detected_corner_msg)
+    {
+        RTT::log(RTT::Info) << "found corner" << RTT::endlog();
+        actual_state = DETECTED_CORNER;
+        if((base::Time::now() - start_corner_msg).toSeconds() > 2.0)
+        {
+            detected_corner_msg = false;
+        }
+    }
 
     // write state if it has changed
     if(last_state != actual_state)

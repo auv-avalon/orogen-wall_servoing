@@ -31,9 +31,10 @@ namespace wall_servoing {
         WallState wall_state;
         bool do_wall_servoing;
         bool do_heading_modulation;
+        bool detected_corner_msg;
+        base::Time start_corner_msg;
         int checking_count;
         int exploration_checking_count;
-        int detected_corner_count;
         const static int checking_wall_samples = 50;
         const static int exploration_mode_samples = 200;
         double last_distance_to_wall;
