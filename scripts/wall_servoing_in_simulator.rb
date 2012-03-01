@@ -150,10 +150,9 @@ Orocos.run 'avalon_simulation', 'wall_servoing', 'sonar_feature_estimator', 'auv
     #auv_avalon = view3d.createPlugin('auv_avalon', 'AUVAvalonVisualization')
     #auv_avalon.showDesiredModelPosition(true)
 
-    Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+    Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, _|
         sonarfeatureviz.updatePointCloud(sample.pointCloud)
         wallviz.updateWallData(sample.wall)
-        sample
     end
     
     #wall_servoing.position_command.connect_to do |data,_|

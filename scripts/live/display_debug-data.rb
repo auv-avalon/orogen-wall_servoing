@@ -17,10 +17,9 @@ sonarfeatureviz = view3d.createPlugin('sonarfeature', 'SonarFeatureVisualization
 wallviz = view3d.createPlugin('wall', 'WallVisualization')
 
 ## connect to debug port
-Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 100 do |sample, name|
     sonarfeatureviz.updatePointCloud(sample.pointCloud)
     wallviz.updateWallData(sample.wall)
-    sample
 end
 
 begin

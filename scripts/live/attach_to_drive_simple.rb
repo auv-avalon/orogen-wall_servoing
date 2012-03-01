@@ -26,6 +26,7 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller',
 
     ## feature_estimator
     feature_estimator = Orocos::TaskContext.get 'sonar_feature_estimator'
+    feature_estimator.derivative_history_length = 1
     ##
 
     ## auv_rel_pos_controller

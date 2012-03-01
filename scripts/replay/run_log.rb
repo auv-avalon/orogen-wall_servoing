@@ -1,17 +1,19 @@
 require 'orocos'
 require 'vizkit'
-require 'vizkit/widgets/task_inspector/task_inspector'
 include Orocos
 
 Orocos.initialize
-log = Orocos::Log::Replay.open(ARGV)
-sonar_port = log.find_port("/base/samples/SonarBeam")
+log = Orocos::Log::Replay.open(ARGV, Typelib::Registry.new)
+#sonar_port = log.find_port("/base/samples/SonarBeam")
+sonar_port = log.sonar.BaseScan
+orentation_port = log.state_estimator.orientation_samples
 puts sonar_port.stream.info.interval_rt.first
 
 Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
 
     sonardetector = Orocos::TaskContext.get 'wall_servoing'
     feature_estimator = Orocos::TaskContext.get 'sonar_feature_estimator'
+    #feature_estimator.derivative_history_length = 1
 
     # wall estimation settings
     sonardetector.wall_estimation_start_angle = Math::PI * 0.25
@@ -31,8 +33,8 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
 
     sonar_port.connect_to feature_estimator.sonar_input
     feature_estimator.new_feature.connect_to sonardetector.sonarbeam_feature
-    log.orientation_estimator.orientation_samples.connect_to sonardetector.orientation_sample
-    log.orientation_estimator.orientation_samples.connect_to feature_estimator.orientation_sample
+    orentation_port.connect_to sonardetector.orientation_sample
+    orentation_port.connect_to feature_estimator.orientation_sample
 
     view3d = Vizkit.default_loader.create_widget('vizkit::Vizkit3DWidget')
     view3d.show()
@@ -43,29 +45,26 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
     #sonarbeamviz = view3d.createPlugin('sonarbeam', 'SonarBeamVisualization')
 
     # Connect debug port to vizkit plugins
-    con = Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+    con = Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, name|
         sonarfeatureviz.updatePointCloud(sample.pointCloud)
         wallviz.updateWallData(sample.wall)
-        sample
     end 
 
-    con = Vizkit.connect_port_to 'wall_servoing', 'position_command', :type => :buffer, :size => 100, :auto_reconnect => true, :pull => false, :update_frequency => 33 do |sample, name|
+    con = Vizkit.connect_port_to 'wall_servoing', 'position_command', :pull => false, :update_frequency => 33 do |sample, name|
         auv_avalon.updateDesiredPosition(sample)
-        sample
     end 
 
-    log.orientation_estimator.orientation_samples :type => :buffer, :size => 100  do |sample|
+    log.state_estimator.orientation_samples do |sample|
         auv_avalon.updateRigidBodyState(sample)
         #sonarbeamviz.updateBodyState(sample)
         sample
     end 
     
-    #log.sonar.BaseScan :type => :buffer, :size => 100  do |sample|
-    #    sonarbeamviz.updateSonarScan(sample)
+    #log.sonar.BaseScan do |sample|
+    #    sonarbeamviz.updateSonarBeam(sample)
     #    sample
     #end 
 
-    sonardetector.configure
     sonardetector.start
 
     feature_estimator.start
@@ -74,7 +73,6 @@ Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
     log.sonar.BaseScan.connect_to viewer
     viewer.show
 
-    Vizkit.display sonardetector.position_command
     task_inspector = Vizkit.default_loader.task_inspector
     task_inspector.config(sonardetector)
     task_inspector.show
