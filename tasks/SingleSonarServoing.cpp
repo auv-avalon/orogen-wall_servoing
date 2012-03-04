@@ -100,6 +100,7 @@ void SingleSonarServoing::updateHook()
         base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
         base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
         centerWallEstimation->setEstimationZone(left_limit, right_limit);
+        centerWallEstimation->setWallAngleVariance(_servoing_speed.get() >= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
         centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
         mWallEstimation->setEstimationZone(left_limit, right_limit);
