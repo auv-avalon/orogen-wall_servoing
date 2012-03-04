@@ -77,6 +77,7 @@ bool SingleSonarServoing::startHook()
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
+    centerWallEstimation->setMinScanPoints(4);
     
     delete mWallEstimation;
     mWallEstimation = new sonar_detectors::MWallEstimation();
