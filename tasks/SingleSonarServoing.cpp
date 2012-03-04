@@ -45,6 +45,8 @@ bool SingleSonarServoing::startHook()
     wall_map.setResolution(24);
     detected_corner_msg = false;
     start_corner_msg = base::Time::now();
+    alignment_complete_msg = false;
+    start_alignment_complete_msg = base::Time::now();
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -231,6 +233,9 @@ void SingleSonarServoing::updateHook()
                 align_origin_heading = false;
                 align_origin_position = false;
                 do_wall_servoing = true;
+                // show alignment complete state
+                alignment_complete_msg = true;
+                start_alignment_complete_msg = base::Time::now();
             }
         }
         else
@@ -345,6 +350,15 @@ void SingleSonarServoing::updateHook()
         if((base::Time::now() - start_corner_msg).toSeconds() > 2.0)
         {
             detected_corner_msg = false;
+        }
+    }
+    // print alignment complete msg for 2 seconds
+    if(alignment_complete_msg)
+    {
+        actual_state = ALIGNMENT_COMPLETE;
+        if((base::Time::now() - start_alignment_complete_msg).toSeconds() > 2.0)
+        {
+            alignment_complete_msg = false;
         }
     }
 
