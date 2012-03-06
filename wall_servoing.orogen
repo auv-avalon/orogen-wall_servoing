@@ -17,8 +17,8 @@ task_context "SonarServoing" do
         doc("the exploration will simply drive forward in the origin serviong direction")
     property("servoing_wall_direction", "double", 0.0).
         doc("in this direction the wall be if the wall servoing is performed, default is 0 than the wall is in front")
-    property("inital_wall_direction", "double", 0.0).
-        doc("the inital heading of avalon to the wall, default is 0 than the wall is in front")
+    property("initial_wall_direction", "double", 0.0).
+        doc("the initial heading of avalon to the wall, default is 0 than the wall is in front")
     property("minimal_wall_distance", "double", 0.75).
         doc("the auv will move away from the wall if the wall is to near")
 

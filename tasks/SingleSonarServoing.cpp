@@ -96,7 +96,7 @@ void SingleSonarServoing::updateHook()
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
         // feed estimators
-        double supposed_wall_direction = do_wall_servoing ? _servoing_wall_direction.get() : _inital_wall_direction.get();
+        double supposed_wall_direction = do_wall_servoing ? _servoing_wall_direction.get() : _initial_wall_direction.get();
         base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
         base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
         centerWallEstimation->setEstimationZone(left_limit, right_limit);
@@ -326,7 +326,7 @@ void SingleSonarServoing::updateHook()
     if(do_wall_servoing)
         relative_target_position = Eigen::AngleAxisd(_servoing_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     else
-        relative_target_position = Eigen::AngleAxisd(_inital_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
+        relative_target_position = Eigen::AngleAxisd(_initial_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
      // create relative position command
     base::AUVPositionCommand positionCommand;
