@@ -38,6 +38,8 @@ namespace wall_servoing {
         bool detected_corner_msg;
         base::Time start_corner_msg;
         double origin_wall_angle;
+        bool alignment_complete_msg;
+        base::Time start_alignment_complete_msg;
         
         int checking_count;
         int exploration_checking_count;

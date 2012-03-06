@@ -45,6 +45,8 @@ bool SingleSonarServoing::startHook()
     wall_map.setResolution(24);
     detected_corner_msg = false;
     start_corner_msg = base::Time::now();
+    alignment_complete_msg = false;
+    start_alignment_complete_msg = base::Time::now();
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -77,6 +79,7 @@ bool SingleSonarServoing::startHook()
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
+    centerWallEstimation->setMinScanPoints(4);
     
     delete mWallEstimation;
     mWallEstimation = new sonar_detectors::MWallEstimation();
@@ -100,6 +103,7 @@ void SingleSonarServoing::updateHook()
         base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
         base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
         centerWallEstimation->setEstimationZone(left_limit, right_limit);
+        centerWallEstimation->setWallAngleVariance(_servoing_speed.get() >= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
         centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
         mWallEstimation->setEstimationZone(left_limit, right_limit);
@@ -229,6 +233,9 @@ void SingleSonarServoing::updateHook()
                 align_origin_heading = false;
                 align_origin_position = false;
                 do_wall_servoing = true;
+                // show alignment complete state
+                alignment_complete_msg = true;
+                start_alignment_complete_msg = base::Time::now();
             }
         }
         else
@@ -343,6 +350,15 @@ void SingleSonarServoing::updateHook()
         if((base::Time::now() - start_corner_msg).toSeconds() > 2.0)
         {
             detected_corner_msg = false;
+        }
+    }
+    // print alignment complete msg for 2 seconds
+    if(alignment_complete_msg)
+    {
+        actual_state = ALIGNMENT_COMPLETE;
+        if((base::Time::now() - start_alignment_complete_msg).toSeconds() > 2.0)
+        {
+            alignment_complete_msg = false;
         }
     }
 
