@@ -203,10 +203,10 @@ void SingleSonarServoing::updateHook()
                     // save inital wall angle
                     origin_wall_angle = current_wall_angle.rad;
                 }
-                else if(std::abs(base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad()) >= M_PI * 0.45)
+                else if(std::abs(base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad()) >= M_PI * 0.40)
                 {
                     // save new wall angle
-                    origin_wall_angle = base::Angle::fromRad(current_wall_angle.rad + copysign(0.05 * M_PI, base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad())).getRad();
+                    origin_wall_angle = base::Angle::fromRad(current_wall_angle.rad + copysign(0.10 * M_PI, base::Angle::fromRad(origin_wall_angle - current_wall_angle.rad).getRad())).getRad();
                     // show detected corner msg and state
                     detected_corner_msg = true;
                     start_corner_msg = base::Time::now();
