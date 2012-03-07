@@ -50,7 +50,7 @@ Orocos.run 'avalon_simulation', 'wall_servoing', 'sonar_feature_estimator', 'auv
     wall_servoing.servoing_speed = -1.0
     wall_servoing.exploration_speed = 0.1
     wall_servoing.servoing_wall_direction = 0.4#0.78538 # 1/4 PI
-    wall_servoing.inital_wall_direction = 0.0
+    wall_servoing.initial_wall_direction = 0.0
 
     wall_servoing.enable_debug_output = true
     ##
