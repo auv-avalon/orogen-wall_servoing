@@ -47,6 +47,9 @@ bool SingleSonarServoing::startHook()
     start_corner_msg = base::Time::now();
     alignment_complete_msg = false;
     start_alignment_complete_msg = base::Time::now();
+    last_valid_feature_left = base::Time::now();
+    last_valid_feature_right = base::Time::now();
+    no_sonar_features_timeout = 10.0; //seconds
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -95,18 +98,26 @@ void SingleSonarServoing::updateHook()
     // read input ports
     _orientation_sample.readNewest(current_orientation);
     
+    // set actual angular limits
+    double supposed_wall_direction = do_wall_servoing ? _servoing_wall_direction.get() : _initial_wall_direction.get();
+    base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
+    base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
+    centerWallEstimation->setEstimationZone(left_limit, right_limit);
+    centerWallEstimation->setWallAngleVariance(_servoing_speed.get() >= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
+    centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
+    mWallEstimation->setEstimationZone(left_limit, right_limit);
+    
     base::samples::LaserScan feature;
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
     {
+        // check if feature is in range
+        if(sonar_detectors::isInAngularRange(base::Angle::fromRad(feature.start_angle), left_limit, base::Angle::fromRad(supposed_wall_direction)))
+            last_valid_feature_left = base::Time::now();
+        else if(sonar_detectors::isInAngularRange(base::Angle::fromRad(feature.start_angle), base::Angle::fromRad(supposed_wall_direction), right_limit))
+            last_valid_feature_right = base::Time::now();
+                
         // feed estimators
-        double supposed_wall_direction = do_wall_servoing ? _servoing_wall_direction.get() : _initial_wall_direction.get();
-        base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
-        base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
-        centerWallEstimation->setEstimationZone(left_limit, right_limit);
-        centerWallEstimation->setWallAngleVariance(_servoing_speed.get() >= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
-        centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
-        mWallEstimation->setEstimationZone(left_limit, right_limit);
         mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
     }
     
@@ -166,7 +177,7 @@ void SingleSonarServoing::updateHook()
     }
     
     
-    Eigen::Vector3d relative_target_position(0,0,0);
+    Eigen::Vector3d relative_target_position(0.0,0.0,0.0);
     base::Angle relative_target_heading = base::Angle::fromRad(0.0);
     
     if(wall_servoing)
@@ -360,6 +371,13 @@ void SingleSonarServoing::updateHook()
         {
             alignment_complete_msg = false;
         }
+    }
+    
+    // check for feature timeout
+    if((base::Time::now() - last_valid_feature_left).toSeconds() > no_sonar_features_timeout
+        || (base::Time::now() - last_valid_feature_right).toSeconds() > no_sonar_features_timeout)
+    {
+        actual_state = MISCONFIGURATION;
     }
 
     // write state if it has changed

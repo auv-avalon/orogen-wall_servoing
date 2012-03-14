@@ -23,6 +23,7 @@ task_context "SonarServoing" do
         doc("the auv will move away from the wall if the wall is to near")
 
     runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL, :ORIGIN_ALIGNMENT, :ALIGNMENT_COMPLETE
+    error_states :MISCONFIGURATION
 end
 
 task_context "SingleSonarServoing" do
