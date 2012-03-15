@@ -9,7 +9,7 @@ sonar_port = log.sonar.BaseScan
 orentation_port = log.state_estimator.orientation_samples
 puts sonar_port.stream.info.interval_rt.first
 
-Orocos.run 'wall_servoing', 'sonar_feature_estimator' do
+Orocos.run 'wall_servoing_test', 'sonar_feature_estimator_test' do
 
     sonardetector = Orocos::TaskContext.get 'wall_servoing'
     feature_estimator = Orocos::TaskContext.get 'sonar_feature_estimator'

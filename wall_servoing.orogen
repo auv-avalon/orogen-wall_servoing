@@ -78,7 +78,7 @@ task_context "DualSonarServoing" do
 end
 
 
-deployment "wall_servoing" do
-    task("wall_servoing", "SingleSonarServoing").
-        periodic(0.1)
+deployment "wall_servoing_test" do
+    do_not_install
+    task("wall_servoing", "SingleSonarServoing")
 end

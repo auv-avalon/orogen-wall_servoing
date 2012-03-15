@@ -7,7 +7,7 @@ Orocos.initialize
 view3d = Vizkit.default_loader.create_widget('vizkit::Vizkit3DWidget')
 view3d.show()
 
-Orocos.run 'avalon_simulation', 'wall_servoing', 'sonar_feature_estimator', 'auv_rel_pos_controller', 'avalon_control_simulation', :wait => 10  do
+Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller', 'avalon_control_simulation', :wait => 10  do
 
     ## simulator
     simulation = TaskContext.get 'avalon_simulation'
