@@ -2,7 +2,7 @@ require 'vizkit'
 require 'orocos'
 include Orocos
 
-Orocos::CORBA.name_service = "192.168.128.51"
+Orocos::CORBA.name_service = "192.168.128.50"
 #Orocos::CORBA.name_service = "127.0.0.1"
 Orocos.initialize
 
