@@ -15,16 +15,19 @@ task_context "SonarServoing" do
         doc("set distance for the y axis, witch will result in a certain speed")
     property("exploration_speed", "double", 0.2).
         doc("the exploration will simply drive forward in the origin serviong direction")
+end
+
+task_context "SingleSonarServoing" do
+    subclasses "SonarServoing"
+
+    # controller settings
     property("servoing_wall_direction", "double", 0.0).
         doc("in this direction the wall be if the wall servoing is performed, default is 0 than the wall is in front")
     property("initial_wall_direction", "double", 0.0).
         doc("the initial heading of avalon to the wall, default is 0 than the wall is in front")
     property("minimal_wall_distance", "double", 0.75).
         doc("the auv will move away from the wall if the wall is to near")
-end
 
-task_context "SingleSonarServoing" do
-    subclasses "SonarServoing"
     # wall estimation settings
     property("left_opening_angle","double", 0.0).
         doc("opening angle to the left of the supposed wall direction, always positive")
@@ -62,6 +65,10 @@ end
 task_context "DualSonarServoing" do
     subclasses "SonarServoing"
 
+    # wall estimation settings
+    property("opening_angle","double", 0.09).
+        doc("opening angle for each of the three observed angular ranges")
+
     input_port('sonarbeam_feature_front', '/base/samples/LaserScan').
         doc("newest sonar feature")
     input_port('sonarbeam_feature_rear', '/base/samples/LaserScan').
@@ -71,7 +78,7 @@ task_context "DualSonarServoing" do
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
 
-    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL, :ORIGIN_ALIGNMENT, :ALIGNMENT_COMPLETE
+    runtime_states :WALL_SERVOING, :SEARCHING_WALL, :DETECTED_CORNER
     error_states :MISCONFIGURATION
 
     port_driven "sonarbeam_feature_front", "sonarbeam_feature_rear"
@@ -81,4 +88,5 @@ end
 deployment "wall_servoing_test" do
     do_not_install
     task("wall_servoing", "SingleSonarServoing")
+    task("dual_wall_servoing", "DualSonarServoing")
 end
