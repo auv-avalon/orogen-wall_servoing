@@ -34,7 +34,7 @@ task_context "SingleSonarServoing" do
         doc("maximal inlier distance to the model")
     property("wall_estimation_ransac_min_inliers","double", 0.7).
         doc("minimum count inliers of the point cloud in percent to be a valid model")
-    property("fading_out_factor","double", 0.05).
+    property("fading_out_factor","double", 0.028).
         doc("fading out factor for the features in center wall estimator")
     property("dbscan_epsilon","double", 0.15).
         doc("epsilon in one meter distance of dbscan algorithm. epsilon will be increased linear by the distance of features").
