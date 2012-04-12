@@ -53,7 +53,7 @@ task_context "SingleSonarServoing" do
     # debug
     property("enable_debug_output", 'bool', false).
         doc("enables the debug output port")
-    output_port('wall_servoing_debug', 'sonar_detectors/wallServoingDebugData').
+    output_port('wall_servoing_debug', 'sonar_detectors/WallServoingDebugData').
         doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
     runtime_states :WALL_SERVOING, :SEARCHING_WALL, :CHECKING_WALL, :DETECTED_CORNER, :LOST_WALL, :ORIGIN_ALIGNMENT, :ALIGNMENT_COMPLETE
@@ -77,6 +77,12 @@ task_context "DualSonarServoing" do
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
+
+    # debug
+    property("enable_debug_output", 'bool', false).
+        doc("enables the debug output port")
+    output_port('wall_servoing_debug', 'sonar_detectors/DualWallServoingDebugData').
+        doc("estimated wall data, the pointcloud, the wall, the distance, the time")
 
     runtime_states :WALL_SERVOING, :SEARCHING_WALL, :DETECTED_CORNER
     error_states :MISCONFIGURATION

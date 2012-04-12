@@ -49,6 +49,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     wall_servoing = Orocos::TaskContext.get 'dual_wall_servoing'
     # wall estimation settings
     wall_servoing.opening_angle = 0.1 * Math::PI
+    wall_servoing.enable_debug_output = true
     # controller settings
     wall_servoing.wall_distance = 2.5
     wall_servoing.fixed_depth = -1.5

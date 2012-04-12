@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "DualSonarServoing.hpp"
+#include "SonarDetectorTaskTypes.hpp"
 
 using namespace wall_servoing;
 
@@ -289,6 +290,17 @@ void DualSonarServoing::updateHook()
     {
         last_state = actual_state;
         state(actual_state);
+    }
+    
+    // write debug output
+    if(_enable_debug_output.get() && _wall_servoing_debug.connected())
+    {
+        sonar_detectors::DualWallServoingDebugData debugData;
+        debugData.wall_distance_front = wall_front_dist.last_distance;
+        debugData.wall_distance_right = wall_right_rear_dist.last_distance;
+        if(!base::isUnknown(last_target_heading))
+            debugData.wall_angle = base::Angle::normalizeRad(last_target_heading - M_PI_2);
+        _wall_servoing_debug.write(debugData);
     }
     
     // write relative position command

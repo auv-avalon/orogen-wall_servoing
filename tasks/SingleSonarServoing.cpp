@@ -394,7 +394,7 @@ void SingleSonarServoing::updateHook()
     // write detection debug data
     if(_enable_debug_output.get())
     {
-        sonar_detectors::wallServoingDebugData debugData;
+        sonar_detectors::WallServoingDebugData debugData;
         debugData.time = base::Time::now();
         std::pair< base::Vector3d, base::Vector3d > wall = centerWallEstimation->getWall();
         debugData.wall.push_back(wall.first);
