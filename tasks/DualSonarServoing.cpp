@@ -40,13 +40,13 @@ void DualSonarServoing::receiveDistanceFromFeature(const base::samples::LaserSca
         }
         else
         {
-            distance = -1;
+            distance = base::unknown<double>();
         }
     }
     catch (std::out_of_range e)
     {
         RTT::log(RTT::Info) << "Received empty laser scan." << RTT::endlog();
-        distance = -1;
+        distance = base::unknown<double>();
     }
 }
 
@@ -69,11 +69,16 @@ void ObstacleDistance::addNewDistanceSample(double distance)
 
 void ObstacleDistance::checkForTimeout(double seconds)
 {
-    if(last_distance > -1.0 && (base::Time::now() - time_last_distance).toSeconds() >= seconds)
+    if(!base::isUnknown(last_distance) && (base::Time::now() - time_last_distance).toSeconds() >= seconds)
     {
-        last_distance = -1.0;
+        last_distance = base::unknown<double>();
         dirty = false;
     }
+}
+
+bool ObstacleDistance::isValid()
+{
+    return !base::isUnknown(last_distance);
 }
 
 
@@ -134,7 +139,7 @@ bool DualSonarServoing::startHook()
     last_valid_feature_front_right = base::Time::now();
     last_valid_feature_rear_right = base::Time::now();
     
-    last_target_heading = 2.0 * M_PI;
+    last_target_heading = base::unknown<double>();
     handle_corner = false;
     
     return true;
@@ -152,9 +157,9 @@ void DualSonarServoing::updateHook()
         if(isInRange(feature.start_angle, front_sonar_front_left_angle, front_sonar_front_right_angle))
         {
             last_valid_feature_front_front = base::Time::now();
-            double distance = 0;
+            double distance = base::unknown<double>();
             receiveDistanceFromFeature(feature, distance);
-            if(distance > 0)
+            if(!base::isUnknown(distance))
             {
                 wall_front_dist.addNewDistanceSample(distance);
             }
@@ -162,9 +167,9 @@ void DualSonarServoing::updateHook()
         else if(isInRange(feature.start_angle, front_sonar_right_left_angle, front_sonar_right_right_angle))
         {
             last_valid_feature_front_right = base::Time::now();
-            double distance = 0;
+            double distance = base::unknown<double>();
             receiveDistanceFromFeature(feature, distance);
-            if(distance > 0)
+            if(!base::isUnknown(distance))
             {
                 wall_right_front_dist.addNewDistanceSample(distance);
             }
@@ -182,9 +187,9 @@ void DualSonarServoing::updateHook()
         if(isInRange(feature.start_angle, rear_sonar_left_angle, rear_sonar_right_angle))
         {
             last_valid_feature_rear_right = base::Time::now();
-            double distance = 0;
+            double distance = base::unknown<double>();
             receiveDistanceFromFeature(feature, distance);
-            if(distance > 0)
+            if(!base::isUnknown(distance))
             {
                 wall_right_rear_dist.addNewDistanceSample(distance);
             }
@@ -205,7 +210,7 @@ void DualSonarServoing::updateHook()
     if(handle_corner)
     {
         actual_state = DETECTED_CORNER;
-        if(last_target_heading > M_PI)
+        if(base::isUnknown(last_target_heading))
         {
             last_target_heading = base::Angle::normalizeRad(current_orientation.getYaw() + M_PI_2);
         }
@@ -213,7 +218,7 @@ void DualSonarServoing::updateHook()
         if(std::abs(last_target_heading - current_orientation.getYaw()) < 0.1)
         {
             handle_corner = false;
-            last_target_heading = 2 * M_PI;
+            last_target_heading = base::unknown<double>();
             wall_right_front_dist.distance_collector.clear();
             wall_front_dist.distance_collector.clear();
             wall_front_dist.dirty = false;
@@ -230,7 +235,7 @@ void DualSonarServoing::updateHook()
         wall_right_rear_dist.checkForTimeout(distance_sample_timeout);
         
         // check wall distance to the right side
-        if(wall_right_rear_dist.last_distance >= 0.0)
+        if(wall_right_rear_dist.isValid())
         {
             actual_state = WALL_SERVOING;
             if(wall_right_rear_dist.dirty)
@@ -242,23 +247,23 @@ void DualSonarServoing::updateHook()
             if(positionCommand.y > -0.5)
             {
                 // save last target heading in global coordinates
-                if(wall_right_front_dist.dirty && wall_right_front_dist.last_distance >= 0.0 && wall_right_rear_dist.last_distance >= 0.0)
+                if(wall_right_front_dist.dirty && wall_right_front_dist.isValid() && wall_right_rear_dist.isValid())
                 {   
                     last_target_heading = base::Angle::normalizeRad(current_orientation.getYaw() + atan2((wall_right_rear_dist.last_distance + sonar_span_y) - wall_right_front_dist.last_distance, sonar_span_x));
                 }
                 
                 // do heading correction
-                if(last_target_heading > M_PI)
+                if(base::isUnknown(last_target_heading))
                     positionCommand.heading = 0.0;
                 else
                     positionCommand.heading = base::Angle::normalizeRad(last_target_heading - current_orientation.getYaw());
                 
                 // check wall distance to the front
-                if(wall_front_dist.dirty && wall_front_dist.last_distance >= 0.0 && wall_front_dist.last_distance < _wall_distance.get() + 0.5)
+                if(wall_front_dist.dirty && wall_front_dist.isValid() && wall_front_dist.last_distance < _wall_distance.get() + 0.5)
                 {
                     positionCommand.x = 0.0;
                     handle_corner = true;
-                    last_target_heading = 2 * M_PI;
+                    last_target_heading = base::unknown<double>();
                 }
                 else
                     positionCommand.x = _servoing_speed.get();

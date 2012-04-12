@@ -4,6 +4,7 @@
 #define WALL_SERVOING_DUALSONARSERVOING_TASK_HPP
 
 #include "wall_servoing/DualSonarServoingBase.hpp"
+#include <base/float.h>
 
 namespace wall_servoing {
     
@@ -15,7 +16,8 @@ namespace wall_servoing {
         bool dirty;
         void checkForTimeout(double seconds);
         void addNewDistanceSample(double distance);
-        ObstacleDistance() : last_distance(-1), dirty(false) {}
+        bool isValid();
+        ObstacleDistance() : last_distance(base::unknown<double>()), dirty(false) {}
     };
     
     class DualSonarServoing : public DualSonarServoingBase
