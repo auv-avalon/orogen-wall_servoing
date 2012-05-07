@@ -2,7 +2,6 @@ name "wall_servoing"
 
 import_types_from "base"
 import_types_from "SonarDetectorTaskTypes.hpp"
-import_types_from "SonarTransformations.hpp"
 using_library "sonar_detectors"
 
 task_context "SonarServoing" do
@@ -44,6 +43,7 @@ task_context "SingleSonarServoing" do
         doc("the default value 0.15 is abaut 1.75 times the angular resolution (default 0.08726646259971647 ~ 5°)")
 
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
+        needs_reliable_connection.
         doc("newest sonar feature")
     input_port "orientation_sample", 'base::samples::RigidBodyState'
 
@@ -70,8 +70,10 @@ task_context "DualSonarServoing" do
         doc("opening angle for each of the three observed angular ranges")
 
     input_port('sonarbeam_feature_front', '/base/samples/LaserScan').
+        needs_reliable_connection.
         doc("newest sonar feature")
     input_port('sonarbeam_feature_rear', '/base/samples/LaserScan').
+        needs_reliable_connection.
         doc("newest sonar feature")
     input_port "orientation_sample", 'base::samples::RigidBodyState'
 
