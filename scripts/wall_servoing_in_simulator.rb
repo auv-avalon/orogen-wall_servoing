@@ -89,7 +89,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ## MotionControlTask
     motion_control = Orocos::TaskContext.get 'motion_control'
     motion_control.timeout = 0.0
-    motion_control.cutoff = 0.5
+    motion_control.cutoff = [-0.65, -0.65, -0.65, -0.65, -0.65, -0.5]
     motion_control.z_coupling_factor = 0.0
     motion_control.y_coupling_factor = 0.0
     motion_control.y_factor = 1.0
@@ -120,8 +120,8 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ##
 
     ## connections
-    sonar.sonar_beam.connect_to feature_estimator.sonar_input
-    feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature
+    sonar.sonar_beam.connect_to feature_estimator.sonar_input, :type => :buffer, :size => 100
+    feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature, :type => :buffer, :size => 100
     wall_servoing.position_command.connect_to relPosController.position_command
     relPosController.motion_command.connect_to motion_control.motion_commands
     motion_control.hbridge_commands.connect_to actuactors.command
