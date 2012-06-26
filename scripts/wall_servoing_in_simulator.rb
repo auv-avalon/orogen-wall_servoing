@@ -89,7 +89,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ## MotionControlTask
     motion_control = Orocos::TaskContext.get 'motion_control'
     motion_control.timeout = 0.0
-    motion_control.cutoff = [-0.65, -0.65, -0.65, -0.65, -0.65, -0.5]
+    motion_control.cutoff = [0.65, 0.65, 0.65, 0.65, 0.65, 0.5]
     motion_control.z_coupling_factor = 0.0
     motion_control.y_coupling_factor = 0.0
     motion_control.y_factor = 1.0
