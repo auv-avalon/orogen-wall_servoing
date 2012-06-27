@@ -22,8 +22,8 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     writer = actuactors.command.writer
     sonar = TaskContext.get 'sonar'
     sonar.ping_pong_mode = true
-    sonar.start_angle = 0.35 * Math::PI
-    sonar.end_angle = -0.35 * Math::PI
+    sonar.left_limit = 0.0 * Math::PI
+    sonar.right_limit = -0.75 * Math::PI
     sonar.configure
     sonar.start
     state_estimator = TaskContext.get 'state_estimator'

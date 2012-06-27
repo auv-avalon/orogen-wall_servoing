@@ -21,16 +21,16 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
 
     sonar = TaskContext.get 'sonar'
     sonar.ping_pong_mode = true
-    sonar.start_angle = 0.03 * Math::PI
-    sonar.end_angle = -0.53 * Math::PI
+    sonar.left_limit = 0.03 * Math::PI
+    sonar.right_limit = -0.53 * Math::PI
     sonar.maximum_distance = 20.0
     sonar.configure
     sonar.start
 
     sonar_rear = TaskContext.get 'sonar_rear'
     sonar_rear.ping_pong_mode = true
-    sonar_rear.start_angle = 0.01 * Math::PI
-    sonar_rear.end_angle = -0.01 * Math::PI
+    sonar_rear.left_limit = -0.3 + 0.03 * Math::PI
+    sonar_rear.right_limit = -0.3 + -0.03 * Math::PI
     sonar_rear.maximum_distance = 20.0
     sonar_rear.configure
     sonar_rear.start
