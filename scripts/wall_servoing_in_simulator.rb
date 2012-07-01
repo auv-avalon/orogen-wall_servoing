@@ -4,7 +4,7 @@ include Orocos
 
 Orocos.initialize
 
-view3d = Vizkit.default_loader.create_widget('vizkit::Vizkit3DWidget')
+view3d = Vizkit.vizkit3d_widget
 view3d.show()
 
 Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller', 'avalon_control_simulation', :wait => 10  do
@@ -146,9 +146,9 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ##
 
     ## run visualizations
-    sonarfeatureviz = view3d.createPlugin('sonarfeature', 'SonarFeatureVisualization')
-    wallviz = view3d.createPlugin('wall', 'WallVisualization')
-    #auv_avalon = view3d.createPlugin('auv_avalon', 'AUVAvalonVisualization')
+    sonarfeatureviz = Vizkit.default_loader.SonarFeatureVisualization
+    wallviz = Vizkit.default_loader.WallVisualization
+    #auv_avalon = Vizkit.default_loader.AUVAvalonVisualization
     #auv_avalon.showDesiredModelPosition(true)
 
     Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, _|

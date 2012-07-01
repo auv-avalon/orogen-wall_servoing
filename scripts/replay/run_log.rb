@@ -32,18 +32,18 @@ Orocos.run 'wall_servoing_test', 'sonar_feature_estimator_test' do
     sonardetector.servoing_wall_direction = -0.4
     sonardetector.inital_wall_direction = 0.0
 
-    sonar_port.connect_to feature_estimator.sonar_input
-    feature_estimator.new_feature.connect_to sonardetector.sonarbeam_feature
+    sonar_port.connect_to feature_estimator.sonar_input, :type => :buffer, :size => 100
+    feature_estimator.new_feature.connect_to sonardetector.sonarbeam_feature, :type => :buffer, :size => 100
     orentation_port.connect_to sonardetector.orientation_sample
     orentation_port.connect_to feature_estimator.orientation_sample
 
-    view3d = Vizkit.default_loader.create_widget('vizkit::Vizkit3DWidget')
+    view3d = Vizkit.vizkit3d_widget
     view3d.show()
-    sonarfeatureviz = view3d.createPlugin('sonarfeature', 'SonarFeatureVisualization')
-    wallviz = view3d.createPlugin('wall', 'WallVisualization')
-    auv_avalon = view3d.createPlugin('auv_avalon', 'AUVAvalonVisualization')
+    sonarfeatureviz = Vizkit.default_loader.SonarFeatureVisualization
+    wallviz = Vizkit.default_loader.WallVisualization
+    auv_avalon = Vizkit.default_loader.AUVAvalonVisualization
     auv_avalon.showDesiredModelPosition(true)
-    #sonarbeamviz = view3d.createPlugin('sonarbeam', 'SonarBeamVisualization')
+    #sonarbeamviz = Vizkit.default_loader.SonarBeamVisualization
 
     # Connect debug port to vizkit plugins
     con = Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, name|

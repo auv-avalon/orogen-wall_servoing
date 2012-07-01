@@ -11,16 +11,20 @@ wall_servoing = Orocos::TaskContext.get 'wall_servoing'
 wall_servoing.enable_debug_output = true
 
 ## run visualizations
-view3d = Vizkit.default_loader.create_widget('vizkit::Vizkit3DWidget')
+view3d = Vizkit.vizkit3d_widget
 view3d.show()
-sonarfeatureviz = view3d.createPlugin('sonarfeature', 'SonarFeatureVisualization')
-wallviz = view3d.createPlugin('wall', 'WallVisualization')
+sonarfeatureviz = Vizkit.default_loader.SonarFeatureVisualization
+wallviz = Vizkit.default_loader.WallVisualization
 
 ## connect to debug port
 Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 100 do |sample, name|
     sonarfeatureviz.updatePointCloud(sample.pointCloud)
     wallviz.updateWallData(sample.wall)
 end
+
+Vizkit.display wall_servoing
+#Vizkit.display Orocos::TaskContext.get 'sonar_feature_estimator'
+Vizkit.display Orocos::TaskContext.get 'sonar'
 
 begin
     Vizkit.exec
