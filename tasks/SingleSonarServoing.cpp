@@ -37,6 +37,7 @@ bool SingleSonarServoing::startHook()
     last_distance_to_wall = -1.0;
     last_angle_to_wall.rad = 2.0 * M_PI;
     origin_wall_angle = 2.0 * M_PI;
+    alignment_heading.rad = 2.0 * M_PI;
     do_wall_servoing = false;
     wall_servoing = false;
     align_origin_position = false;
@@ -247,10 +248,13 @@ void SingleSonarServoing::updateHook()
                 // show alignment complete state
                 alignment_complete_msg = true;
                 start_alignment_complete_msg = base::Time::now();
+                alignment_heading.rad = 2 * M_PI;
             }
         }
         else
         {
+            if(alignment_heading.rad > M_PI)
+                alignment_heading = base::Angle::fromRad(current_orientation.getYaw());
             switch(wall_state)
             {
                 case NO_WALL_FOUND:
@@ -270,7 +274,10 @@ void SingleSonarServoing::updateHook()
                     // align position
                     double distance_diff = distance_to_wall - _wall_distance.get();
                     if(distance_diff > 0.5)
+                    {
+                        relative_target_heading = alignment_heading - base::Angle::fromRad(current_orientation.getYaw());
                         relative_target_position.x() = distance_diff;
+                    }
                     else
                         align_origin_heading = true;
                     

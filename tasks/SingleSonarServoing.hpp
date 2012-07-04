@@ -51,6 +51,7 @@ namespace wall_servoing {
         base::Angle current_wall_angle;
         const static double check_distance_threshold = 1.0;
         const static double check_angle_threshold = 0.25 * M_PI;
+        base::Angle alignment_heading;
         
         base::Time last_valid_feature_left;
         base::Time last_valid_feature_right;
