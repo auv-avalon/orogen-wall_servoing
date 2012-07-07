@@ -355,8 +355,8 @@ void SingleSonarServoing::updateHook()
     
      // create relative position command
     base::AUVPositionCommand positionCommand;
-    positionCommand.x = relative_target_position.x();
-    positionCommand.y = relative_target_position.y();
+    positionCommand.x = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
+    positionCommand.y = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
     positionCommand.z = _fixed_depth.get();
     positionCommand.heading = relative_target_heading.getRad();
     
