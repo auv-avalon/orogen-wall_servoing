@@ -29,6 +29,8 @@ namespace wall_servoing {
         sonar_detectors::SonarWallMap wall_map;
         States last_state;
         WallState wall_state;
+        base::Time started_task;
+        bool inital_wait;
         
         bool do_wall_servoing;
         bool wall_servoing;

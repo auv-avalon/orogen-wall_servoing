@@ -41,6 +41,8 @@ task_context "SingleSonarServoing" do
     property("dbscan_epsilon","double", 0.15).
         doc("epsilon in one meter distance of dbscan algorithm. epsilon will be increased linear by the distance of features").
         doc("the default value 0.15 is abaut 1.75 times the angular resolution (default 0.08726646259971647 ~ 5°)")
+    property("wait_until_start","double", 3.0).
+        doc("wait time in seconds until the wall servoing will start, this helps to get better data from the estimator")
 
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
         needs_reliable_connection.

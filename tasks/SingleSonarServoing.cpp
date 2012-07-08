@@ -43,6 +43,7 @@ bool SingleSonarServoing::startHook()
     align_origin_position = false;
     align_origin_heading = false;
     current_orientation.invalidate();
+    current_orientation.invalidateOrientation();
     wall_map.setResolution(24);
     detected_corner_msg = false;
     start_corner_msg = base::Time::now();
@@ -51,6 +52,7 @@ bool SingleSonarServoing::startHook()
     last_valid_feature_left = base::Time::now();
     last_valid_feature_right = base::Time::now();
     no_sonar_features_timeout = 10.0; //seconds
+    inital_wait = true;
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -120,6 +122,40 @@ void SingleSonarServoing::updateHook()
         // feed estimators
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
         mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+    }
+    
+    // wait inital some seconds befor the wall-servoing starts
+    if(inital_wait)
+    {
+        if(started_task.microseconds == 0.0)
+            started_task = base::Time::now();
+        if(!current_orientation.hasValidOrientation())
+        {
+            RTT::log(RTT::Info) << "waiting for valid orientation" << RTT::endlog();
+            return;
+        }
+        else if((base::Time::now() - started_task).toSeconds() - _wait_until_start > 0.0)
+        {
+            inital_wait = false;
+            alignment_heading.rad = M_PI * 2.0;
+        }
+        else
+        {
+            if(alignment_heading.rad > M_PI)
+                alignment_heading = base::Angle::fromRad(current_orientation.getYaw());
+            
+            base::AUVPositionCommand positionCommand;
+            positionCommand.x = 0.0;
+            positionCommand.y = 0.0;
+            positionCommand.z = _fixed_depth.get();
+            positionCommand.heading = (alignment_heading - base::Angle::fromRad(current_orientation.getYaw())).getRad();
+                    
+            // write relative position command
+            if (_position_command.connected())
+                _position_command.write(positionCommand);
+            
+            return;
+        }
     }
     
     // analyze wall position
