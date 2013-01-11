@@ -7,7 +7,7 @@ Orocos.initialize
 view3d = Vizkit.vizkit3d_widget
 view3d.show()
 
-Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller', 'avalon_control_simulation', :wait => 10  do
+Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller::Task' => 'auv_rel_pos_controller' , 'avalon_control::MotionControlTask' => 'motion_control', :wait => 10  do
 
     ## simulator
     simulation = TaskContext.get 'avalon_simulation'
@@ -29,9 +29,11 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     state_estimator = TaskContext.get 'state_estimator'
     state_estimator.configure
     state_estimator.start
-
-    simulation.setPosition(45,22,0)
+    
+    #simulation.setPosition(55,0,0)
+    simulation.setPosition(45,20,0)
     #simulation.setPosition(-40,-15,0)
+   
     simulation.setOrientation(0,0,0.707,0.707)
     ##
 
@@ -46,12 +48,14 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     wall_servoing.fading_out_factor = 0.02
     # controller settings
     wall_servoing.wall_distance = 3.0
-    wall_servoing.fixed_depth = -3
-    wall_servoing.servoing_speed = -1.0
+    wall_servoing.fixed_depth = -2.5
+    wall_servoing.servoing_speed = 1.0
     wall_servoing.exploration_speed = 0.1
-    wall_servoing.servoing_wall_direction = 0.4#0.78538 # 1/4 PI
+    wall_servoing.servoing_wall_direction = -0.25 * Math::PI - 0.8  #0.4#0.78538 # 1/4 PI
     wall_servoing.initial_wall_direction = 0.0
-
+    wall_servoing.check_distance_threshold = 2.0
+    
+    wall_servoing.use_motion_model = true
     wall_servoing.enable_debug_output = true
     ##
 
@@ -59,6 +63,8 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     feature_estimator = Orocos::TaskContext.get 'sonar_feature_estimator'
     feature_estimator.derivative_history_length = 1
     feature_estimator.enable_debug_output = true
+    feature_estimator.plain_threshold = 0.5
+    feature_estimator.signal_threshold = 0.7
     ##
 
     ## auv_rel_pos_controller
@@ -127,6 +133,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     motion_control.hbridge_commands.connect_to actuactors.command
 
     state_estimator.pose_samples.connect_to wall_servoing.orientation_sample
+    state_estimator.pose_samples.connect_to wall_servoing.position_sample
     state_estimator.pose_samples.connect_to relPosController.position_sample
     state_estimator.pose_samples.connect_to feature_estimator.orientation_sample
     state_estimator.pose_samples.connect_to motion_control.pose_samples
@@ -167,6 +174,9 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     #end
 
     Vizkit.display wall_servoing
+    Vizkit.display state_estimator
+    Vizkit.display feature_estimator
+    Vizkit.display sonar
 
     Vizkit.exec
 end

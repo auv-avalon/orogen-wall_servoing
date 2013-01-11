@@ -51,13 +51,19 @@ namespace wall_servoing {
         double last_distance_to_wall;
         base::Angle last_angle_to_wall;
         base::Angle current_wall_angle;
-        const static double check_distance_threshold = 1.0;
+        double check_distance_threshold;
         const static double check_angle_threshold = 0.25 * M_PI;
         base::Angle alignment_heading;
         
         base::Time last_valid_feature_left;
         base::Time last_valid_feature_right;
-        double no_sonar_features_timeout;
+        double no_sonar_features_timeout;	
+	
+	base::Vector3d last_known_position;	//Stores the position, when a scan is complete
+	base::Vector3d last_position;		//Stores the last recieved position
+	double last_feature_bearing;		//the bearing of the last recieved laser-scan
+	double last_known_distance;		//stores the distance to the wall, when a scan is complete
+	bool sonar_direction;			//this boolean is used to detect a change in the scan direction
 
     public:
         SingleSonarServoing(std::string const& name = "wall_servoing::SingleSonarServoing", TaskCore::TaskState initial_state = Stopped);

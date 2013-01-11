@@ -53,6 +53,8 @@ bool SingleSonarServoing::startHook()
     last_valid_feature_right = base::Time::now();
     no_sonar_features_timeout = 10.0; //seconds
     inital_wait = true;
+    sonar_direction=true;
+    check_distance_threshold = _check_distance_threshold.get();
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -66,6 +68,10 @@ bool SingleSonarServoing::startHook()
                     << "Input port 'orientation_sample' is not connected." << RTT::endlog();
         return false;
     }
+    if(!_position_sample.connected() && _use_motion_model.get()){
+	  RTT::log(RTT::Error) << TaskContext::getName() << ": "
+		    << "Input port 'positon_sample' is not connected." << RTT::endlog();
+    }		    
     
     double ransac_threshold = _wall_estimation_ransac_threshold.get();
     double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
@@ -106,9 +112,31 @@ void SingleSonarServoing::updateHook()
     base::Angle left_limit = base::Angle::fromRad(supposed_wall_direction + _left_opening_angle.get());
     base::Angle right_limit = base::Angle::fromRad(supposed_wall_direction - _right_opening_angle.get());
     centerWallEstimation->setEstimationZone(left_limit, right_limit);
-    centerWallEstimation->setWallAngleVariance(_servoing_speed.get() >= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
+    centerWallEstimation->setWallAngleVariance(_servoing_speed.get() <= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
     centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
     mWallEstimation->setEstimationZone(left_limit, right_limit);
+    double distance_to_wall = last_distance_to_wall;
+    
+    bool position_sample = false; //true, when the last recieved sample was a position-sample | false, when it was a laser-scan
+    base::samples::RigidBodyState rbs;
+    
+    //Read position samples
+    while(_position_sample.read(rbs) == RTT::NewData){
+	base::Vector3d actPosition = rbs.position;
+	
+	//Calculate the relative position of avalon to the last known position
+	double relX = cos(current_orientation.getYaw()) * (actPosition.x() - last_known_position.x()) 
+			- sin(current_orientation.getYaw()) * (actPosition.y()-last_known_position.y());
+	double relY = cos(current_orientation.getYaw()) * (actPosition.y() - last_known_position.y())
+			+ sin(current_orientation.getYaw()) * (actPosition.x() - last_known_position.x());
+	
+	//Calculate the distance to wall by using the change in position
+	distance_to_wall = last_known_distance - cos(current_orientation.getYaw()) * relX + sin(current_orientation.getYaw()) * relY;		
+	last_distance_to_wall = distance_to_wall;
+	last_position = actPosition;
+	
+	position_sample = true;
+    }
     
     base::samples::LaserScan feature;
     while (_sonarbeam_feature.read(feature) == RTT::NewData) 
@@ -122,6 +150,26 @@ void SingleSonarServoing::updateHook()
         // feed estimators
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
         mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+	
+	//Detect a change in the sonar-scan direction
+	if(((feature.start_angle - last_feature_bearing) > 0.0 && sonar_direction) 
+	    || ((feature.start_angle - last_feature_bearing) < 0.0 && !sonar_direction)){
+	
+	    base::Vector3d wallPos = centerWallEstimation->getWall().first;
+	    distance_to_wall = sonar_detectors::length(wallPos);	    
+	
+	   //save position and distance data
+	   last_known_position = last_position;
+	   last_known_distance = distance_to_wall;
+	    
+	    if(sonar_direction)
+	      sonar_direction = false;
+	    else
+	      sonar_direction = true;
+	}   
+	
+	last_feature_bearing = feature.start_angle;
+	position_sample = false;
     }
     
     // wait inital some seconds befor the wall-servoing starts
@@ -159,16 +207,18 @@ void SingleSonarServoing::updateHook()
     }
     
     // analyze wall position
-    base::Vector3d wallPos = centerWallEstimation->getWall().first;
-    double distance_to_wall = 0.0;
+    base::Vector3d wallPos = centerWallEstimation->getWall().first;    
     if (wallPos.x() == 0.0 && wallPos.y() == 0.0)
     {
         wall_state = NO_WALL_FOUND;
     }
     else
-    {
-        distance_to_wall = sonar_detectors::length(wallPos);
-        current_wall_angle = base::Angle::fromRad(atan2(wallPos.y(), wallPos.x()));
+    {	
+	  //if the motion model is not used, update the wall-distance by using sonar-data
+	 if((!_use_motion_model.get() && !position_sample) || !wall_servoing){	   
+	      distance_to_wall = sonar_detectors::length(wallPos);	    
+	 }
+	 current_wall_angle = base::Angle::fromRad(atan2(wallPos.y(), wallPos.x()));
         
         if (last_distance_to_wall < 0)
         {
@@ -230,7 +280,7 @@ void SingleSonarServoing::updateHook()
             case DISTANCE_DIFF:
             case ANGLE_DIFF:
                 checking_count = 0;
-                actual_state = LOST_WALL;
+                actual_state = LOST_WALL; 
                 break;
             case WALL_FOUND:
             {
@@ -325,7 +375,8 @@ void SingleSonarServoing::updateHook()
         }
     }
     else
-    {
+    {	
+	 
         actual_state = LOST_WALL;
         // switch to exploration mode after some samples
         if(exploration_checking_count < exploration_mode_samples)
