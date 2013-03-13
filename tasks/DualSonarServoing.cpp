@@ -306,6 +306,19 @@ void DualSonarServoing::updateHook()
     // write relative position command
     if (_position_command.connected())
         _position_command.write(positionCommand);
+
+    //create and wite alignied command
+    if (_aligned_command.connected()){
+        base::LinearAngular6DCommand alignedCommand;
+
+        alignedCommand.linear(0) = positionCommand.x;
+        alignedCommand.linear(1) = positionCommand.y;
+        alignedCommand.linear(2) = positionCommand.z;
+        alignedCommand.angular(1) = 0.0;
+        alignedCommand.angular(2) = positionCommand.heading;
+
+        _aligned_command.write(alignedCommand);
+    }
 }
 void DualSonarServoing::errorHook()
 {

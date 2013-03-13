@@ -201,7 +201,19 @@ void SingleSonarServoing::updateHook()
             // write relative position command
             if (_position_command.connected())
                 _position_command.write(positionCommand);
-            
+           
+            //create commnd for aligned 
+            base::LinearAngular6DCommand alignedCommand;
+            alignedCommand.linear(0) = 0.0;
+            alignedCommand.linear(1) = 0.0;
+            alignedCommand.linear(2) = _fixed_depth.get();
+            alignedCommand.angular(1) = 0.0;
+            alignedCommand.angular(2) = (alignment_heading - base::Angle::fromRad(current_orientation.getYaw())).getRad();
+
+            // write aligned position command
+            if (_aligned_command.connected())
+                _aligned_command.write(alignedCommand);
+
             return;
         }
     }
@@ -447,6 +459,14 @@ void SingleSonarServoing::updateHook()
     positionCommand.z = _fixed_depth.get();
     positionCommand.heading = relative_target_heading.getRad();
     
+    //create commnd for aligned 
+    base::LinearAngular6DCommand alignedCommand;
+    alignedCommand.linear(0) = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
+    alignedCommand.linear(1) = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
+    alignedCommand.linear(2) = _fixed_depth.get();
+    alignedCommand.angular(1) = 0.0;
+    alignedCommand.angular(2) = relative_target_heading.getRad();
+ 
     // print detected corner msg for 2 seconds
     if(detected_corner_msg)
     {
@@ -484,6 +504,10 @@ void SingleSonarServoing::updateHook()
     // write relative position command
     if (_position_command.connected())
         _position_command.write(positionCommand);
+    
+    // write aligned position command
+    if (_aligned_command.connected())
+        _aligned_command.write(alignedCommand);
     
     // write detection debug data
     if(_enable_debug_output.get())

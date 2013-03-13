@@ -2,6 +2,7 @@ name "wall_servoing"
 
 import_types_from "base"
 import_types_from "SonarDetectorTaskTypes.hpp"
+import_types_from "auv_control"
 using_library "sonar_detectors"
 
 task_context "SonarServoing" do
@@ -58,6 +59,8 @@ task_context "SingleSonarServoing" do
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
+    output_port('aligned_command', 'base::LinearAngular6DCommand').
+	doc("relativ target position and heading for new control draft")
 
     # debug
     property("enable_debug_output", 'bool', false).
@@ -88,6 +91,9 @@ task_context "DualSonarServoing" do
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
+    output_port('aligned_command', 'base::LinearAngular6DCommand').
+	doc("relativ target position and heading for new control draft")
+
 
     # debug
     property("enable_debug_output", 'bool', false).
