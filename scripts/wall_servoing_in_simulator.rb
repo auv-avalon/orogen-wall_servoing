@@ -4,8 +4,8 @@ include Orocos
 
 Orocos.initialize
 
-view3d = Vizkit.vizkit3d_widget
-view3d.show()
+#view3d = Vizkit.vizkit3d_widget
+#view3d.show()
 
 Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller::Task' => 'auv_rel_pos_controller' , 'avalon_control::MotionControlTask' => 'motion_control', :wait => 10  do
 
@@ -16,14 +16,14 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     simulation.use_osg_ocean = false
     simulation.configure
     simulation.start
-    actuactors = TaskContext.get 'actuators'
-    actuactors.configure
-    actuactors.start
-    writer = actuactors.command.writer
+    actuators = TaskContext.get 'actuators'
+    actuators.configure
+    actuators.start
+    writer = actuators.command.writer
     sonar = TaskContext.get 'sonar'
     sonar.ping_pong_mode = true
-    sonar.left_limit = 0.0 * Math::PI
-    sonar.right_limit = -0.75 * Math::PI
+    sonar.left_limit = 0.55 * Math::PI
+    sonar.right_limit = -0.2 * Math::PI
     sonar.configure
     sonar.start
     state_estimator = TaskContext.get 'state_estimator'
@@ -40,18 +40,18 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ## wall_servoing
     wall_servoing = Orocos::TaskContext.get 'wall_servoing'
     # wall estimation settings
-    wall_servoing.left_opening_angle = 0.25 * Math::PI
+    wall_servoing.left_opening_angle = 0.4 * Math::PI
     wall_servoing.right_opening_angle = 0.35 * Math::PI
     wall_servoing.wall_estimation_ransac_threshold = 0.5
     wall_servoing.wall_estimation_ransac_min_inliers = 0.85
     wall_servoing.dbscan_epsilon = 0.08726646259971647 * 1.5
     wall_servoing.fading_out_factor = 0.02
     # controller settings
-    wall_servoing.wall_distance = 3.0
+    wall_servoing.wall_distance = 4.0
     wall_servoing.fixed_depth = -2.5
-    wall_servoing.servoing_speed = 1.0
+    wall_servoing.servoing_speed = -0.3
     wall_servoing.exploration_speed = 0.1
-    wall_servoing.servoing_wall_direction = -0.25 * Math::PI - 0.8  #0.4#0.78538 # 1/4 PI
+    wall_servoing.servoing_wall_direction = 0.5*Math::PI #-0.25 * Math::PI - 0.8  #0.4#0.78538 # 1/4 PI
     wall_servoing.initial_wall_direction = 0.0
     wall_servoing.check_distance_threshold = 2.0
     
@@ -130,7 +130,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature, :type => :buffer, :size => 100
     wall_servoing.position_command.connect_to relPosController.position_command
     relPosController.motion_command.connect_to motion_control.motion_commands
-    motion_control.hbridge_commands.connect_to actuactors.command
+    motion_control.hbridge_commands.connect_to actuators.command
 
     state_estimator.pose_samples.connect_to wall_servoing.orientation_sample
     state_estimator.pose_samples.connect_to wall_servoing.position_sample
@@ -153,15 +153,15 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     ##
 
     ## run visualizations
-    sonarfeatureviz = Vizkit.default_loader.SonarFeatureVisualization
-    wallviz = Vizkit.default_loader.WallVisualization
+    #sonarfeatureviz = Vizkit.default_loader.SonarFeatureVisualization
+    #wallviz = Vizkit.default_loader.WallVisualization
     #auv_avalon = Vizkit.default_loader.AUVAvalonVisualization
     #auv_avalon.showDesiredModelPosition(true)
 
-    Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, _|
-        sonarfeatureviz.updatePointCloud(sample.pointCloud)
-        wallviz.updateWallData(sample.wall)
-    end
+    #Vizkit.connect_port_to 'wall_servoing', 'wall_servoing_debug', :pull => false, :update_frequency => 33 do |sample, _|
+    #    sonarfeatureviz.updatePointCloud(sample.pointCloud)
+    #    wallviz.updateWallData(sample.wall)
+    #end
     
     #wall_servoing.position_command.connect_to do |data,_|
     #    auv_avalon.updateDesiredPosition(data)
@@ -173,10 +173,10 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     #    data
     #end
 
-    Vizkit.display wall_servoing
-    Vizkit.display state_estimator
-    Vizkit.display feature_estimator
-    Vizkit.display sonar
+    #Vizkit.display wall_servoing
+    #Vizkit.display state_estimator
+    #Vizkit.display feature_estimator
+    #Vizkit.display sonar
 
     Vizkit.exec
 end

@@ -61,6 +61,8 @@ task_context "SingleSonarServoing" do
         doc("relativ target position and heading")
     output_port('aligned_command', 'base::LinearAngular6DCommand').
 	doc("relativ target position and heading for new control draft")
+    output_port('world_command', 'base::LinearAngular6DCommand').
+	doc("absolute depth for new control draft")	
 
     # debug
     property("enable_debug_output", 'bool', false).
