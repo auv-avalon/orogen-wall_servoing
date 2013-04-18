@@ -24,7 +24,7 @@ namespace wall_servoing {
 	friend class SingleSonarServoingBase;
     protected:
         sonar_detectors::CenterWallEstimation* centerWallEstimation;
-        sonar_detectors::MWallEstimation* mWallEstimation;
+        sonar_detectors::CenterWallEstimation* frontWallEstimation;
         base::samples::RigidBodyState current_orientation;
         sonar_detectors::SonarWallMap wall_map;
         States last_state;
@@ -64,6 +64,8 @@ namespace wall_servoing {
 	double last_feature_bearing;		//the bearing of the last recieved laser-scan
 	double last_known_distance;		//stores the distance to the wall, when a scan is complete
 	bool sonar_direction;			//this boolean is used to detect a change in the scan direction
+	
+	double front_distance;
 
     public:
         SingleSonarServoing(std::string const& name = "wall_servoing::SingleSonarServoing", TaskCore::TaskState initial_state = Stopped);

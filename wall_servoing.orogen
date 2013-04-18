@@ -33,15 +33,10 @@ task_context "SingleSonarServoing" do
         doc("opening angle to the left of the supposed wall direction, always positive")
     property("right_opening_angle","double", 0.0).
         doc("opening angle to the right of the supposed wall direction, always positive")
-    property("wall_estimation_ransac_threshold","double", 0.5).
-        doc("maximal inlier distance to the model")
-    property("wall_estimation_ransac_min_inliers","double", 0.7).
-        doc("minimum count inliers of the point cloud in percent to be a valid model")
+
     property("fading_out_factor","double", 0.028).
         doc("fading out factor for the features in center wall estimator")
-    property("dbscan_epsilon","double", 0.15).
-        doc("epsilon in one meter distance of dbscan algorithm. epsilon will be increased linear by the distance of features").
-        doc("the default value 0.15 is abaut 1.75 times the angular resolution (default 0.08726646259971647 ~ 5°)")
+
     property("wait_until_start","double", 3.0).
         doc("wait time in seconds until the wall servoing will start, this helps to get better data from the estimator")
     property("use_motion_model","bool", false).
@@ -50,6 +45,15 @@ task_context "SingleSonarServoing" do
     property("check_distance_threshold","double", 1.0).
 	doc("The distance difference between two samples, at which a error is detected")
 
+	
+   property("use_front_distance", "bool", true).
+       doc("Using the front-wall-distance to reduce servoing-speed in corner, when true")
+   property("left_front_angle", "double", 0.0).
+	doc("opening angle to the left of the supposed front wall direction, always positive")
+   property("right_front_angle", "double", 0.0).
+	doc("opening angle to the right of the supposed front wall direction,alway positive") 
+   
+	
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
         needs_reliable_connection.
         doc("newest sonar feature")

@@ -10,7 +10,7 @@ using namespace wall_servoing;
 
 SingleSonarServoing::SingleSonarServoing(std::string const& name, TaskCore::TaskState initial_state)
     : SingleSonarServoingBase(name, initial_state)
-    , centerWallEstimation(0), mWallEstimation(0)
+    , centerWallEstimation(0), frontWallEstimation(0)
 {
     
 }
@@ -55,6 +55,7 @@ bool SingleSonarServoing::startHook()
     inital_wait = true;
     sonar_direction=true;
     check_distance_threshold = _check_distance_threshold.get();
+    front_distance = 999;
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -72,30 +73,19 @@ bool SingleSonarServoing::startHook()
 	  RTT::log(RTT::Error) << TaskContext::getName() << ": "
 		    << "Input port 'positon_sample' is not connected." << RTT::endlog();
     }		    
-    
-    double ransac_threshold = _wall_estimation_ransac_threshold.get();
-    double ransac_min_inliers = _wall_estimation_ransac_min_inliers.get();
-    if (ransac_threshold < 0.0)
-    {
-        RTT::log(RTT::Error) << "The ransac threshold has to be greater than 0 for the wall estimation." << RTT::endlog();
-        return false;
-    }
-    if (ransac_min_inliers > 1.0 || ransac_min_inliers < 0.0)
-    {
-        RTT::log(RTT::Error) << "The ransac minimum inliers have to be between 0 and 1 for the wall estimation," 
-                     << "because this value is in percent." << RTT::endlog();
-        return false;
-    }
-    
+   
+  
     // set up wall estimation
     delete centerWallEstimation;
     centerWallEstimation = new sonar_detectors::CenterWallEstimation();
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
     centerWallEstimation->setMinScanPoints(4);
     
-    delete mWallEstimation;
-    mWallEstimation = new sonar_detectors::MWallEstimation();
-    mWallEstimation->setParameters(ransac_threshold, ransac_min_inliers, _dbscan_epsilon.get(), 0.08726646259971647);
+    delete frontWallEstimation;
+    frontWallEstimation = new sonar_detectors::CenterWallEstimation();
+    frontWallEstimation->setFadingOutFactor(_fading_out_factor.get());
+    frontWallEstimation->setMinScanPoints(2);
+
 
     return true;
 }
@@ -114,8 +104,14 @@ void SingleSonarServoing::updateHook()
     centerWallEstimation->setEstimationZone(left_limit, right_limit);
     centerWallEstimation->setWallAngleVariance(_servoing_speed.get() <= 0.0 ? _left_opening_angle.get() * 0.3 : _right_opening_angle.get() * -0.3);
     centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction));
-    mWallEstimation->setEstimationZone(left_limit, right_limit);
+
     double distance_to_wall = last_distance_to_wall;
+    
+    base::Angle left_front_limit = base::Angle::fromRad(supposed_wall_direction - 0.5 * M_PI + _left_front_angle.get());
+    base::Angle right_front_limit = base::Angle::fromRad(supposed_wall_direction - 0.5 * M_PI -  _right_front_angle.get());
+    frontWallEstimation->setEstimationZone(left_front_limit, right_front_limit); 
+    frontWallEstimation->setWallAngleVariance(0.0);
+    frontWallEstimation->setSupposedWallAngle(base::Angle::fromRad(supposed_wall_direction-0.5*M_PI));
     
     bool position_sample = false; //true, when the last recieved sample was a position-sample | false, when it was a laser-scan
     base::samples::RigidBodyState rbs;
@@ -149,7 +145,18 @@ void SingleSonarServoing::updateHook()
                 
         // feed estimators
         centerWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
-        mWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+	
+	
+	if(feature.start_angle > right_front_limit.rad && feature.start_angle < left_front_limit.rad){
+	  frontWallEstimation->updateFeature(feature, base::Angle::fromRad(current_orientation.getYaw()));
+	  
+	  std::pair<base::Vector3d, base::Vector3d> wall = frontWallEstimation->getWall();
+	  base::Vector3d frontWall = wall.first;
+	  front_distance = frontWall(0) == 0 && frontWall(1) == 0 ? 999 : sonar_detectors::length(frontWall);
+	  std::cout << "Front distance " << front_distance << std::endl;
+	  std::cout << "Front wall " << frontWall.transpose() << " - " << wall.second.transpose() << std::endl;
+	
+	} 
 	
 	//Detect a change in the sonar-scan direction
 	if(((feature.start_angle - last_feature_bearing) > 0.0 && sonar_direction) 
@@ -274,7 +281,8 @@ void SingleSonarServoing::updateHook()
             
     }
     else if(checking_count <= 0)
-    {
+    {	
+	std::cout << "Lost wall at checking_count : "<< std::endl;
         wall_servoing = false;
         align_origin_position = false;
     }
@@ -296,7 +304,7 @@ void SingleSonarServoing::updateHook()
             case DISTANCE_DIFF:
             case ANGLE_DIFF:
                 checking_count = 0;
-                actual_state = LOST_WALL; 
+                actual_state = LOST_WALL;		
                 break;
             case WALL_FOUND:
             {
@@ -306,6 +314,12 @@ void SingleSonarServoing::updateHook()
                 
                 // do servoing
                 relative_target_position.y() = _servoing_speed.get();
+		
+		if( fabs(relative_target_position.y()) > front_distance - _wall_distance && _use_front_distance.get()){
+		    relative_target_position.y() =  _wall_distance - front_distance;
+		     std::cout << "Reduce Speed to: " << relative_target_position.y() << std::endl;
+		 } 
+		
                 // calculate ralative heading correction
                 relative_target_heading = current_wall_angle - base::Angle::fromRad(current_orientation.getYaw() + _servoing_wall_direction.get());
                 // calculate new x
@@ -367,6 +381,7 @@ void SingleSonarServoing::updateHook()
                 case ANGLE_DIFF:
                     checking_count = 0;
                     actual_state = LOST_WALL;
+		     std::cout << "Lost wall at align_origin_position : " << wall_state << std::endl;
                     break;
                 case WALL_FOUND:
                 {
@@ -447,6 +462,8 @@ void SingleSonarServoing::updateHook()
             {
                 relative_target_position.x() = _exploration_speed.get();
             }
+            
+      
         }
     }
     
@@ -547,14 +564,11 @@ void SingleSonarServoing::stopHook()
 
 void SingleSonarServoing::cleanupHook()
 {
-    if (mWallEstimation)
-    {
-        delete mWallEstimation;
-        mWallEstimation = 0;
-    }
+
     if (centerWallEstimation)
     {
         delete centerWallEstimation;
+	delete frontWallEstimation;
         centerWallEstimation = 0;
     }
 }

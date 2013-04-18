@@ -7,35 +7,18 @@ Orocos.initialize
 #view3d = Vizkit.vizkit3d_widget
 #view3d.show()
 
-Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller::Task' => 'auv_rel_pos_controller' , 'avalon_control::MotionControlTask' => 'motion_control', :wait => 10  do
+log = Orocos::Log::Replay.open("../../../../logs/scripts2/sonar.12.log","../../../../logs/scripts2/uw_particle_localization_test.12.log")
 
-    ## simulator
-    simulation = TaskContext.get 'avalon_simulation'
-    simulation.debug_sonar = 1
-    simulation.enable_gui = true
-    simulation.use_osg_ocean = false
-    simulation.configure
-    simulation.start
-    actuators = TaskContext.get 'actuators'
-    actuators.configure
-    actuators.start
-    writer = actuators.command.writer
-    sonar = TaskContext.get 'sonar'
-    sonar.ping_pong_mode = true
-    sonar.left_limit = 0.7 * Math::PI
-    sonar.right_limit = -0.1 * Math::PI
-    sonar.configure
-    sonar.start
-    state_estimator = TaskContext.get 'state_estimator'
-    state_estimator.configure
-    state_estimator.start
+Orocos.run 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller::Task' => 'auv_rel_pos_controller' , 'avalon_control::MotionControlTask' => 'motion_control', :wait => 10  do
+
+
+
+    sonar = log.task "sonar"
+
+    state_estimator = log.task "uw_particle_localization"
+
     
-    #simulation.setPosition(55,0,0)
-    simulation.setPosition(45,20,0)
-    #simulation.setPosition(-40,-15,0)
-   
-    simulation.setOrientation(0,0,0.707,0.707)
-    ##
+
 
     ## wall_servoing
     wall_servoing = Orocos::TaskContext.get 'wall_servoing'
@@ -132,7 +115,6 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     feature_estimator.new_feature.connect_to wall_servoing.sonarbeam_feature, :type => :buffer, :size => 100
     wall_servoing.position_command.connect_to relPosController.position_command
     relPosController.motion_command.connect_to motion_control.motion_commands
-    motion_control.hbridge_commands.connect_to actuators.command
 
     state_estimator.pose_samples.connect_to wall_servoing.orientation_sample
     #state_estimator.pose_samples.connect_to wall_servoing.position_sample
@@ -179,6 +161,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     #Vizkit.display state_estimator
     #Vizkit.display feature_estimator
     #Vizkit.display sonar
-
+    
+    Vizkit.control log
     Vizkit.exec
 end
