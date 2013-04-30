@@ -1,0 +1,69 @@
+name "asv_localization"
+
+import_types_from "base"
+using_library "pose_ekf"
+
+task_context "Task" do
+  
+    #-------------------------
+    # Input ports
+    #-------------------------
+  
+    input_port("gps_samples" , "base/samples/RigidBodyState").
+      doc("Position samples of the gps")
+    
+    input_port("imu_samples" ,"base/samples/IMUSensors").
+      doc("Acceleration data of the imu")
+  
+    input_port("orientation_samples", "base/samples/RigidBodyState").
+	doc("orientation_samples of the imu")
+	
+	
+    input_port("velocity_samples", "base/samples/RigidBodyState").
+	doc("Velocity samples for acceleration estimation. For test purpose only")
+     
+    
+    #-------------------------
+    # Output ports
+    #-------------------------
+    
+    output_port("pose_samples", "base/samples/RigidBodyState")
+      doc("A RBS containing position, velocity and covariance of both")
+    
+    #------------------------
+    # Properties
+    #------------------------
+    
+    property("gps_error", "double" , 1.0).
+      doc("Variance of the gps in meter")
+    
+    property("acceleration_error" , "double" , 0.001).
+      doc("Variance of the imu in m/s^2")
+    
+    property("velocity_error" , "double" , 0.1).
+      doc("Variance of the velocity estimation im  m/s")
+      
+    
+    property("gps_reject_threshold", "double" , 3.0)
+    
+    property("velocity_reject_threshold" , "double" , 1.0)
+
+    
+    
+    #----------------------------
+    # Stream Aligner
+    #----------------------------
+    
+    stream_aligner do
+      max_latency 1.5
+      align_port "gps_samples", 1.0
+      align_port "imu_samples", 0.1
+      align_port "orientation_samples", 0.1
+      align_port "velocity_samples", 0.1
+    end    
+  
+    needs_configuration
+
+    periodic 0.1
+end
+

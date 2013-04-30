@@ -1,0 +1,19 @@
+<package>
+  <description brief="EKF-Localization for asv">
+  EKF-Localization using GPS and IMU
+  </description>
+  <author>fzachert/fzachert@tzi.de</author>
+  <license></license>
+  <url>http://</url>
+  <logo>http://</logo>
+  <!--
+   To add any dependencies use the depend tag
+  <depend package="dummy-dependency-0" />
+	...
+  <depend package="dummy-dependency-n-1" />
+  <depend package="dummy-dependency-n" />
+  -->
+  <depend package="base/types" />
+  <depend package="slam/pose_ekf" />
+  <depend package="drivers/orogen/aggregator" />
+</package>
