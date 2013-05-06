@@ -5,6 +5,7 @@
 
 #include "asv_localization/TaskBase.hpp"
 #include "pose_ekf/KFD_PosVelAcc.hpp"
+#include "aggregator/StreamAligner.hpp"
 
 namespace asv_localization {
 
@@ -27,10 +28,10 @@ namespace asv_localization {
 	friend class TaskBase;
     protected:
 
-        virtual void gps_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &gps_samples_sample);
-        virtual void imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUSensors &imu_samples_sample);
-        virtual void orientation_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &orientation_samples_sample);
-	virtual void velocity_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &velocity_samples_sample);
+        void gps_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &gps_samples_sample);
+        void imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUSensors &imu_samples_sample);
+        void orientation_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &orientation_samples_sample);
+	 void velocity_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &velocity_samples_sample);
 
     public:
         /** TaskContext constructor for Task
@@ -110,18 +111,26 @@ namespace asv_localization {
 	
       private:
   
-	pose_ekf::KFD_PosVelAcc ekf;
+	pose_ekf::KFD_PosVelAcc ekf; //The used kalman-filter
 	
-	bool firstPositionRecieved;
-	bool firstOrientationRecieved;
-	base::Time lastImuTime;
-	base::Time lastGpsTime;
+	bool firstPositionRecieved; //True, when we recieved an gps-sample
+	bool firstOrientationRecieved; //True, when we recieved a orientation-sample
+	base::Time lastImuTime; //Timestamp, of the last recieved imu-sample. Used for calculating delta-time of acceleration
+	base::Time lastGpsTime; //Timestamo, of the last recieved gps_sample. Used for calculation delta-time of velocity
 	
-	base::samples::RigidBodyState firstGpsSample;
-	base::samples::RigidBodyState lastGpsSample;
+	base::samples::RigidBodyState firstGpsSample; //Use first Gps-sample as origin
+	base::samples::RigidBodyState lastGpsSample; //Last gps-sample for velocity-interpolation
+	int samplesCount; //Counter for gps_samples
 	
-	base::samples::RigidBodyState lastVelocitySample;
-	base::Time lastVelocityTime;
+	base::samples::RigidBodyState lastVelocitySample; //Last velcity-sample. Used for calculating acceleration out of simulation data
+	base::Time lastVelocityTime; //Timestamp of the last recieved velocity. USed for acceleration-calculation
+	
+	aggregator::StreamAligner strAligner; //Stream aligner 
+	int orientationID;
+	int velocityID;
+	int imuID;
+	int gpsID;
+	
     };
     
     

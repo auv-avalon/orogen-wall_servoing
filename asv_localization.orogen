@@ -47,6 +47,25 @@ task_context "Task" do
     property("gps_reject_threshold", "double" , 3.0)
     
     property("velocity_reject_threshold" , "double" , 1.0)
+    
+    property("max_delay" ,"double" , 2.0).
+      doc("Max delay of incomming streams")
+      
+    property("gps_period", "double" , 1.0)
+    property("imu_period", "double" , 0.1)
+    property("ori_period", "double" , 0.1)
+    property("vel_period", "double" , 0.1)
+    
+    
+    property("initial_gps_origin", "bool" , false).
+      doc("When true, the first recieved gps-position is used as the origin")
+      
+    property("estimate_velocity", "bool", true).
+      doc("Use gps for velocity-estimation")
+    property("velocity_estimation_count", "int", 10).
+      doc("Number of gps-samples, which are used for one velocity estimation")
+   
+    
 
     
     
@@ -54,16 +73,19 @@ task_context "Task" do
     # Stream Aligner
     #----------------------------
     
-    stream_aligner do
-      max_latency 1.5
-      align_port "gps_samples", 1.0
-      align_port "imu_samples", 0.1
-      align_port "orientation_samples", 0.1
-      align_port "velocity_samples", 0.1
-    end    
+#    stream_aligner do
+#      max_latency 1.5
+#      align_port "gps_samples", 1.0
+#      align_port "imu_samples", 0.1
+#      align_port "orientation_samples", 0.1
+#      align_port "velocity_samples", 0.1
+#    end    
   
     needs_configuration
 
-    periodic 0.1
+    port_driven :gps_samples
+    port_driven :imu_samples
+    port_driven :orientation_samples
+    port_driven :velocity_samples
 end
 

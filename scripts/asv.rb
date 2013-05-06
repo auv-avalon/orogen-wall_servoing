@@ -14,16 +14,24 @@ Orocos.run "AvalonSimulation", "asv_localization::Task"=> "asv_localization"  ,:
     simulation.enable_gui = true
     simulation.configure
     simulation.start
-    asv_actuactors = TaskContext.get 'asv_actuators'
-    asv_actuactors.configure
-    asv_actuactors.start
-    asv_writer = asv_actuactors.command.writer
+    asv_actuators = TaskContext.get 'asv_actuators'
+    asv_actuators.configure
+    asv_actuators.start
+    asv_writer = asv_actuators.command.writer
+    state = TaskContext.get 'state_estimator'
+    state.configure
+    state.start
     
     
     asv_localization = TaskContext.get 'asv_localization'
+
+    asv_actuators.pose_samples.connect_to asv_localization.gps_samples
+    asv_actuators.pose_samples.connect_to asv_localization.orientation_samples
+    asv_actuators.pose_samples.connect_to asv_localization.velocity_samples
+    
     asv_localization.configure
     asv_localization.start
-
+    
     widget.joystick1.connect(SIGNAL('axisChanged(double,double)'))do |x,y|
         sample = asv_writer.new_sample
         sample.time = Time.now 
@@ -38,9 +46,9 @@ Orocos.run "AvalonSimulation", "asv_localization::Task"=> "asv_localization"  ,:
         asv_writer.write sample
     end
 
-    #Vizkit.display simulation.to_async
-    #Vizkit.display asv_actuactors.to_async
-    #Vizkit.display asv_localization.to_async
+    #Vizkit.display simulation
+    #Vizkit.display asv_actuators
+    #Vizkit.display asv_localization
     widget.show 
     Vizkit.exec
 
