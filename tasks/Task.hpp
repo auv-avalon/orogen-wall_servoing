@@ -126,10 +126,10 @@ namespace asv_localization {
 	base::Time lastVelocityTime; //Timestamp of the last recieved velocity. USed for acceleration-calculation
 	
 	aggregator::StreamAligner strAligner; //Stream aligner 
-	int orientationID;
-	int velocityID;
-	int imuID;
-	int gpsID;
+	int orientationID; //ID of the orientation-stream
+	int velocityID; //ID of the velocity-stream
+	int imuID; //ID ofthe imu-stream
+	int gpsID; //ID of the gps-stream
 	
     };
     

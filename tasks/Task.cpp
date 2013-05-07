@@ -20,10 +20,10 @@ Task::~Task()
 
 void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &gps_samples_sample)
 {
- std::cout << "GPS callback" << std::endl;  
+ //std::cout << "GPS callback" << std::endl;
+  
   if(firstPositionRecieved){
- 
-    
+     
     if(firstOrientationRecieved){
       base::Vector3d pos; 
       
@@ -37,22 +37,25 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
       }else if(_estimate_velocity.get() ){
 	
 	samplesCount++;
-	
+		
 	if(samplesCount >= _velocity_estimation_count.get() ){
+	  
+	  //Calculate the relative movement between the samples
 	  double relX = cos(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[0] - lastGpsSample.position[0])
 			  - sin(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[1] - lastGpsSample.position[1]);
 			  
 	  double relY = sin(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[0] - lastGpsSample.position[0])		
 			  + cos(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[1] - lastGpsSample.position[1]);
-			  
+	  
+	  //Calculate the velocity from movement and time-delay		  
 	  base::Vector3d vel;
-	  vel[0] = relX / (ts.toSeconds() - lastGpsTime.toSeconds());
-	  vel[1] = relY / (ts.toSeconds() - lastGpsTime.toSeconds());
+	  vel[0] = relX / (ts.toSeconds() - lastGpsSample.time.toSeconds());
+	  vel[1] = relY / (ts.toSeconds() - lastGpsSample.time.toSeconds());
 	  vel[2] = 0;
 	  
 	  base::Matrix3d covar = base::Matrix3d::Identity() * _velocity_error.get() ;
 	  
-	  
+	  //Observation
 	  if(ekf.velocityObservation(vel, covar, _velocity_reject_threshold.get()))
 	    std::cout << "Rejected Velocity" << std::endl;
 	    
@@ -63,7 +66,7 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
       
     }    
     
-  }else{
+  }else{ //First gps-sample
     
     base::Matrix3d covariance = base::Matrix3d::Identity() * _gps_error.get();
     
@@ -71,10 +74,13 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
     firstGpsSample = gps_samples_sample;
     firstPositionRecieved = true;
     
+    //Use 0,0,0 as origin
     if(!_initial_gps_origin.get())
       firstGpsSample.position = base::Vector3d::Zero();
     
     ekf.setPosition( firstGpsSample.position , covariance);
+
+    std::cout << "Initialize Position";
   }
   
   
@@ -87,15 +93,17 @@ void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUS
   if(!lastImuTime.isNull() && firstOrientationRecieved){
     double dt = ts.toSeconds() - lastImuTime.toSeconds();
     
+    //Covariance
     Eigen::Matrix<double, 9, 9 >  process_noise = Eigen::Matrix<double, 9, 9>::Zero();
+    //Acceleration noise
     process_noise(0,0) = _acceleration_error.get();
     process_noise(1,1) = _acceleration_error.get();
     process_noise(2,2) = _acceleration_error.get();
-    
+    //Velocity noise: sum up covariance 
     process_noise(3,3) = _acceleration_error.get() * dt;
     process_noise(4,4) = _acceleration_error.get() * dt;
     process_noise(5,5) = _acceleration_error.get() * dt;
-    
+    //Position noise: sum up velocity covariancee
     process_noise(6,6) = _acceleration_error.get() * dt * dt;
     process_noise(7,7) = _acceleration_error.get() * dt * dt;
     process_noise(8,8) = _acceleration_error.get() * dt * dt;
@@ -110,11 +118,12 @@ void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUS
 
 void Task::orientation_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &orientation_samples_sample)
 {    
-  std::cout << "Orientation callback" << std::endl;
+  //std::cout << "Orientation callback" << std::endl;
   firstOrientationRecieved = true;
   
   ekf.setRotation(orientation_samples_sample.orientation);
   
+  //Write out actual state
   base::samples::RigidBodyState rbs;
   rbs.position = ekf.getPosition();
   rbs.velocity = ekf.getVelocity();
@@ -127,8 +136,8 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
 
 
 void Task::velocity_samplesCallback(const:: base::Time &ts, const ::base::samples::RigidBodyState &velocity_samples_sample){
-  std::cout << "Velocity callback" << std::endl;
-  if(!lastVelocityTime.isNull()){
+  //std::cout << "Velocity callback" << std::endl;
+  /*if(!lastVelocityTime.isNull()){
     double dt = ts.toSeconds() - lastVelocityTime.toSeconds();
     
     base::Vector3d acc;
@@ -153,7 +162,13 @@ void Task::velocity_samplesCallback(const:: base::Time &ts, const ::base::sample
     ekf.predict( acc, dt, process_noise);
     
     
-  }
+  }*/
+  
+  base::Matrix3d cov = base::Matrix3d::Identity() * _velocity_error.get();
+  
+  if( !ekf.velocityObservation( velocity_samples_sample.velocity, cov, _velocity_reject_threshold.get()))
+    std::cout << "Rejected velocity" << std::endl;
+  
   
   lastVelocityTime = ts;
   lastVelocitySample = velocity_samples_sample;
@@ -184,6 +199,7 @@ bool Task::configureHook()
     strAligner.setTimeout( base::Time::fromSeconds(_max_delay.get()));
     const double buffer_size_factor = 2.0;
     
+    //Register data streams at the stream aligner
     if( _gps_samples.connected()){
       
       gpsID = strAligner.registerStream<base::samples::RigidBodyState>(
@@ -243,7 +259,7 @@ void Task::updateHook()
     
     RTT::TaskContext::updateHook();
     
-    
+    //Collect new input data and push them into the stream aligner
     base::samples::RigidBodyState orientation;
     while( _orientation_samples.read(orientation) == RTT::NewData )
     {
@@ -272,7 +288,7 @@ void Task::updateHook()
 	
     }     
     
-    
+    //Excecute stream-aligner steps
     while(strAligner.step());  
     
     
