@@ -2,6 +2,8 @@ name "asv_localization"
 
 import_types_from "base"
 using_library "pose_ekf"
+using_library "aggregator"
+import_types_from "aggregator"
 
 task_context "Task" do
   
@@ -27,8 +29,11 @@ task_context "Task" do
     # Output ports
     #-------------------------
     
-    output_port("pose_samples", "base/samples/RigidBodyState")
+    output_port("pose_samples", "base/samples/RigidBodyState").
       doc("A RBS containing position, velocity and covariance of both")
+      
+    output_port("stream_aligner_status", "aggregator/StreamAlignerStatus").
+      doc("Actual status of the stream alligner")
     
     #------------------------
     # Properties

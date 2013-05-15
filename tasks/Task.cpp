@@ -118,7 +118,7 @@ void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUS
 
 void Task::orientation_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &orientation_samples_sample)
 {    
-  //std::cout << "Orientation callback" << std::endl;
+  std::cout << "Orientation callback" << std::endl;
   firstOrientationRecieved = true;
   
   ekf.setRotation(orientation_samples_sample.orientation);
@@ -127,6 +127,7 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
   base::samples::RigidBodyState rbs;
   rbs.position = ekf.getPosition();
   rbs.velocity = ekf.getVelocity();
+  rbs.time = base::Time::now();
   rbs.cov_position = ekf.getPositionCovariance();
   rbs.cov_velocity = ekf.getVelocityCovariance();
   _pose_samples.write(rbs);
@@ -196,6 +197,11 @@ bool Task::configureHook()
     lastVelocityTime = base::Time();
     samplesCount = 0;
     
+    orientationID = -1;
+    imuID = -1;
+    gpsID = -1;
+    velocityID = -1;
+    
     strAligner.setTimeout( base::Time::fromSeconds(_max_delay.get()));
     const double buffer_size_factor = 2.0;
     
@@ -260,40 +266,50 @@ void Task::updateHook()
     RTT::TaskContext::updateHook();
     
     //Collect new input data and push them into the stream aligner
-    base::samples::RigidBodyState orientation;
-    while( _orientation_samples.read(orientation) == RTT::NewData )
-    {
- 	strAligner.push( orientationID, orientation.time, orientation );
-	
-    }
+    
+    if(orientationID != -1){
+      base::samples::RigidBodyState orientation;
+      while( _orientation_samples.read(orientation) == RTT::NewData )
+      {
+	  strAligner.push( orientationID, orientation.time, orientation );
+	  
+      }
+    }  
 
-    base::samples::RigidBodyState gps_sample;
-    while( _gps_samples.read(gps_sample) == RTT::NewData )
-    {
- 	strAligner.push( gpsID, gps_sample.time, gps_sample );
-	
-    } 
     
-    base::samples::RigidBodyState velocity_sample;
-    while( _velocity_samples.read(velocity_sample) == RTT::NewData )
-    {
- 	strAligner.push( velocityID, velocity_sample.time, velocity_sample );
-	
-    } 
+    if(gpsID != -1){
+      base::samples::RigidBodyState gps_sample;
+      while( _gps_samples.read(gps_sample) == RTT::NewData )
+      {
+	  strAligner.push( gpsID, gps_sample.time, gps_sample );
+	  
+      }
+    }  
     
-    base::samples::IMUSensors imu_sample;
-    while( _imu_samples.read(imu_sample) == RTT::NewData )
-    {
- 	strAligner.push( imuID, imu_sample.time, imu_sample );
-	
-    }     
+    if(velocityID != -1){
+      base::samples::RigidBodyState velocity_sample;
+      while( _velocity_samples.read(velocity_sample) == RTT::NewData )
+      {
+	  strAligner.push( velocityID, velocity_sample.time, velocity_sample );
+	  
+      }
+    }  
+    
+    if(imuID != -1){
+      base::samples::IMUSensors imu_sample;
+      while( _imu_samples.read(imu_sample) == RTT::NewData )
+      {
+	  strAligner.push( imuID, imu_sample.time, imu_sample );
+	  
+      }
+    }   
     
     //Excecute stream-aligner steps
     while(strAligner.step());  
     
     
     //std::cout << "Update" << std::endl;
-    //_stream_aligner_status.write(_stream_aligner.getStatus());
+    _stream_aligner_status.write(strAligner.getStatus());
     
 }
 
