@@ -89,8 +89,25 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
 }
 
 void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUSensors &imu_samples_sample)
-{
+{  
+  
   if(!lastImuTime.isNull() && firstOrientationRecieved){
+    
+    base::samples::IMUSensors sample = imu_samples_sample;
+    base::Orientation ori = ekf.getRotation();
+    double pitch = base::getPitch(ori) - 0.1; //Offset for imu calibration TODO calibrate imu!!
+    double roll = base::getRoll(ori) ;//+ 0.034;
+    const double gravity = 9.81274; 
+    
+    //The asv-imu is turned to 90 degrees -> change x and y acceleration
+    //Use pitch and roll to eliminate gravity
+    sample.acc[0] = -imu_samples_sample.acc[1] - gravity * sin(pitch);
+    sample.acc[1] = imu_samples_sample.acc[0] + gravity * sin(roll);  
+    sample.acc[2] = 0.0; //As we only drive on the surface, there is no z-acceleration
+    
+    //std::cout << "Pitch: " << pitch << " Roll: " << roll << std::endl;
+    //std::cout << "New Acceleration: " << sample.acc.transpose() << std::endl;
+    
     double dt = ts.toSeconds() - lastImuTime.toSeconds();
     
     //Covariance
@@ -108,7 +125,7 @@ void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUS
     process_noise(7,7) = _acceleration_error.get() * dt * dt;
     process_noise(8,8) = _acceleration_error.get() * dt * dt;
     
-    ekf.predict( imu_samples_sample.acc, dt, process_noise);
+    ekf.predict( sample.acc, dt, process_noise);
       
   }
   
@@ -126,6 +143,7 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
   //Write out actual state
   base::samples::RigidBodyState rbs;
   rbs.position = ekf.getPosition();
+  rbs.position[2] = 0.0;
   rbs.velocity = ekf.getVelocity();
   rbs.time = base::Time::now();
   rbs.cov_position = ekf.getPositionCovariance();
@@ -252,7 +270,7 @@ bool Task::startHook()
         return false;
     
 
-    ekf = pose_ekf::KFD_PosVelAcc();
+    //ekf = pose_ekf::KFD_PosVelAcc();
     
     return true;
     
