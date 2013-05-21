@@ -22,17 +22,22 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
 {
  //std::cout << "GPS callback" << std::endl;
   
+  base::Vector3d pos;
+  
+  pos[0] = gps_samples_sample.position[1];
+  pos[1] = -gps_samples_sample.position[0];
+  pos[2] = 0.0;
+  
   if(firstPositionRecieved){
      
     if(firstOrientationRecieved){
-      base::Vector3d pos; 
+       
       
-      for(int i = 0; i < 3; i++)
-	  pos[i] = gps_samples_sample.position[i] - firstGpsSample.position[i];
+      pos = pos - firstGpsSample.position;
       
       base::Matrix3d covariance = base::Matrix3d::Identity() * _gps_error.get();
       
-      if(ekf.positionObservation( gps_samples_sample.position, covariance, _gps_reject_threshold.get() )){
+      if(ekf.positionObservation( pos, covariance, _gps_reject_threshold.get() )){
 	std::cout << "Rejected GPS-Sample" << std::endl;
       }else if(_estimate_velocity.get() ){
 	
@@ -41,11 +46,11 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
 	if(samplesCount >= _velocity_estimation_count.get() ){
 	  
 	  //Calculate the relative movement between the samples
-	  double relX = cos(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[0] - lastGpsSample.position[0])
-			  - sin(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[1] - lastGpsSample.position[1]);
+	  double relX = cos(base::getYaw(ekf.getRotation())) * (pos[0] - lastGpsSample.position[0])
+			  - sin(base::getYaw(ekf.getRotation())) * (pos[1] - lastGpsSample.position[1]);
 			  
-	  double relY = sin(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[0] - lastGpsSample.position[0])		
-			  + cos(base::getYaw(ekf.getRotation())) * (gps_samples_sample.position[1] - lastGpsSample.position[1]);
+	  double relY = sin(base::getYaw(ekf.getRotation())) * (pos[0] - lastGpsSample.position[0])		
+			  + cos(base::getYaw(ekf.getRotation())) * (pos[1] - lastGpsSample.position[1]);
 	  
 	  //Calculate the velocity from movement and time-delay		  
 	  base::Vector3d vel;
@@ -69,16 +74,18 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
   }else{ //First gps-sample
     
     base::Matrix3d covariance = base::Matrix3d::Identity() * _gps_error.get();
+    base::samples::RigidBodyState rbs = gps_samples_sample;
+    rbs.position = pos;
     
-    lastGpsSample = gps_samples_sample;
-    firstGpsSample = gps_samples_sample;
+    lastGpsSample = rbs;
+    firstGpsSample = rbs;
     firstPositionRecieved = true;
     
     //Use 0,0,0 as origin
     if(!_initial_gps_origin.get())
       firstGpsSample.position = base::Vector3d::Zero();
     
-    ekf.setPosition( firstGpsSample.position , covariance);
+    ekf.setPosition( pos , covariance);
 
     std::cout << "Initialize Position";
   }
@@ -135,16 +142,19 @@ void Task::imu_samplesCallback(const base::Time &ts, const ::base::samples::IMUS
 
 void Task::orientation_samplesCallback(const base::Time &ts, const ::base::samples::RigidBodyState &orientation_samples_sample)
 {    
-  std::cout << "Orientation callback" << std::endl;
+  //std::cout << "Orientation callback" << std::endl;
   firstOrientationRecieved = true;
   
-  ekf.setRotation(orientation_samples_sample.orientation);
+  base::Orientation ori = imuRotation * orientation_samples_sample.orientation;
+  ekf.setRotation(ori);
   
   //Write out actual state
   base::samples::RigidBodyState rbs;
   rbs.position = ekf.getPosition();
   rbs.position[2] = 0.0;
   rbs.velocity = ekf.getVelocity();
+  rbs.orientation = ori;
+  rbs.angular_velocity = orientation_samples_sample.angular_velocity;
   rbs.time = base::Time::now();
   rbs.cov_position = ekf.getPositionCovariance();
   rbs.cov_velocity = ekf.getVelocityCovariance();
@@ -219,6 +229,8 @@ bool Task::configureHook()
     imuID = -1;
     gpsID = -1;
     velocityID = -1;
+    
+    imuRotation = base::Quaterniond(Eigen::AngleAxisd(_imu_rotation.get() , Eigen::Vector3d::UnitZ()) );
     
     strAligner.setTimeout( base::Time::fromSeconds(_max_delay.get()));
     const double buffer_size_factor = 2.0;

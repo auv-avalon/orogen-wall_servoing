@@ -131,6 +131,8 @@ namespace asv_localization {
 	int imuID; //ID ofthe imu-stream
 	int gpsID; //ID of the gps-stream
 	
+	base::Quaterniond imuRotation;
+	
     };
     
     

@@ -69,6 +69,9 @@ task_context "Task" do
       doc("Use gps for velocity-estimation")
     property("velocity_estimation_count", "int", 10).
       doc("Number of gps-samples, which are used for one velocity estimation")
+      
+    property("imu_rotation", "double", 0.0).
+      doc("rotation of the imu around the z-axis")
 
     
     
