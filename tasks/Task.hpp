@@ -6,6 +6,7 @@
 #include "asv_localization/TaskBase.hpp"
 #include "pose_ekf/KFD_PosVelAcc.hpp"
 #include "aggregator/StreamAligner.hpp"
+#include <boost/circular_buffer.hpp>
 
 namespace asv_localization {
 
@@ -120,6 +121,8 @@ namespace asv_localization {
 	
 	base::samples::RigidBodyState firstGpsSample; //Use first Gps-sample as origin
 	base::samples::RigidBodyState lastGpsSample; //Last gps-sample for velocity-interpolation
+	boost::circular_buffer<base::samples::RigidBodyState> gpsPositions; //Ringbuffer of the last gps-samples for velocity estimation
+	base::Orientation lastOrientation; 
 	int samplesCount; //Counter for gps_samples
 	
 	base::samples::RigidBodyState lastVelocitySample; //Last velcity-sample. Used for calculating acceleration out of simulation data
