@@ -66,6 +66,7 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
 	  vel[2] = 0;
 	  
 	  base::Matrix3d covar = base::Matrix3d::Identity() * _velocity_error.get() ;
+	  actualVelocity = vel;
 	  
 	  //Velocity-Observation
 	  if(ekf.velocityObservation(vel, covar, _velocity_reject_threshold.get()))
@@ -160,7 +161,12 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
     base::samples::RigidBodyState rbs;
     rbs.position = ekf.getPosition();
     rbs.position[2] = 0.0;
-    rbs.velocity = ekf.getVelocity();
+    
+    if(_use_gps_velocity.get())
+      rbs.velocity = actualVelocity;
+    else
+      rbs.velocity = ekf.getVelocity();
+    
     rbs.orientation = lastOrientation;
     rbs.angular_velocity = orientation_samples_sample.angular_velocity;
     rbs.time = base::Time::now();
@@ -239,6 +245,7 @@ bool Task::configureHook()
     imuID = -1;
     gpsID = -1;
     velocityID = -1;
+    actualVelocity = base::Vector3d::Zero();
     
     imuRotation = base::Quaterniond(Eigen::AngleAxisd(_imu_rotation.get() , Eigen::Vector3d::UnitZ()) );
     

@@ -136,6 +136,8 @@ namespace asv_localization {
 	
 	base::Quaterniond imuRotation;
 	
+	base::Vector3d actualVelocity;
+	
     };
     
     

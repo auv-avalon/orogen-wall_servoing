@@ -72,6 +72,8 @@ task_context "Task" do
       
     property("imu_rotation", "double", 0.0).
       doc("rotation of the imu around the z-axis")
+      
+    property("use_gps_velocity", "bool", false)
 
     
     
