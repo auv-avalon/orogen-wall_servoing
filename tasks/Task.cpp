@@ -162,8 +162,10 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
     rbs.position = ekf.getPosition();
     rbs.position[2] = 0.0;
     
-    if(_use_gps_velocity.get())
+    if(_use_gps_velocity.get() == 1)
       rbs.velocity = actualVelocity;
+    else if(_use_gps_velocity.get() == 0)
+      rbs.velocity = base::Vector3d::Zero();
     else
       rbs.velocity = ekf.getVelocity();
     
