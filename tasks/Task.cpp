@@ -29,6 +29,8 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
   pos[1] = -gps_samples_sample.position[0];
   pos[2] = 0.0; //We asume, that we are only on the surface
   
+  pos = pos - (ekf.getRotation() * relativeGps);
+  
   base::samples::RigidBodyState rbs = gps_samples_sample;
   rbs.position = pos;
   
@@ -169,6 +171,9 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
     else
       rbs.velocity = ekf.getVelocity();
     
+    sum += rbs.velocity[1] * rbs.velocity[1];
+    count++;
+    std::cout << "Sum vel: " << sum << " Varianz: " << sum/count << " Std-Abweichung: " << std::sqrt(sum/count) <<  std::endl;
     rbs.orientation = lastOrientation;
     rbs.angular_velocity = orientation_samples_sample.angular_velocity;
     rbs.time = base::Time::now();
@@ -252,6 +257,10 @@ bool Task::configureHook()
     imuRotation = base::Quaterniond(Eigen::AngleAxisd(_imu_rotation.get() , Eigen::Vector3d::UnitZ()) );
     
     gpsPositions = boost::circular_buffer<base::samples::RigidBodyState>(_velocity_estimation_count.get());
+    
+    relativeGps = _relative_gps_position.get();
+    count = 0.0;
+    sum = 0.0;
     
     strAligner.setTimeout( base::Time::fromSeconds(_max_delay.get()));
     const double buffer_size_factor = 2.0;

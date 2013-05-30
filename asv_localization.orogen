@@ -74,7 +74,10 @@ task_context "Task" do
       doc("rotation of the imu around the z-axis")
       
     property("use_gps_velocity", "int", 2).
-      doc("0: zero velocity, 1: gps-estimated velocity, 2: imu-estimated velocity")	
+      doc("0: zero velocity, 1: gps-estimated velocity, 2: imu-estimated velocity")
+      
+    property("relative_gps_position", "base/Vector3d").
+      doc("Position of the gps in the body frame")
 	
     
     
