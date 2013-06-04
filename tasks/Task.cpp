@@ -29,7 +29,7 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
   pos[1] = -gps_samples_sample.position[0];
   pos[2] = 0.0; //We asume, that we are only on the surface
   
-  pos = pos - (ekf.getRotation() * relativeGps);
+  pos = pos - (ekf.getRotation().inverse() * relativeGps);
   
   base::samples::RigidBodyState rbs = gps_samples_sample;
   rbs.position = pos;
@@ -48,24 +48,29 @@ void Task::gps_samplesCallback(const base::Time &ts, const ::base::samples::Rigi
 	std::cout << "Rejected GPS-Sample" << std::endl;
       }else if(_estimate_velocity.get() ){ //When the observation was valid and we want to estimate the velocity ->
 	
+	rbs.orientation = ekf.getRotation();
 	gpsPositions.push_back(rbs);
 		
 	if(gpsPositions.full() ){
 	  
-	  base::samples::RigidBodyState oldSample = *(gpsPositions.begin()+1); //Get the first sample 
+	  base::samples::RigidBodyState oldSample = *(gpsPositions.begin()+1); //Get the first sample
+	  //Get the middle orientation between the actual arientation and the oldest orientation
+	  base::Orientation avg_ori = (gpsPositions.begin() + (_velocity_estimation_count/2))->orientation;
 	  
-	  //Calculate the relative movement between the samples
-	  double relX = cos(base::getYaw(ekf.getRotation())) * (pos[0] - oldSample.position[0])
-			  - sin(base::getYaw(ekf.getRotation())) * (pos[1] - oldSample.position[1]);
 			  
-	  double relY = sin(base::getYaw(ekf.getRotation())) * (pos[0] - oldSample.position[0])		
-			  + cos(base::getYaw(ekf.getRotation())) * (pos[1] - oldSample.position[1]);
+	  base::Vector3d relPos = avg_ori.inverse() * (pos - oldSample.position);		  
 	  
-	  //Calculate the velocity from movement and time-delay		  
-	  base::Vector3d vel;
-	  vel[0] = relX / (ts.toSeconds() - oldSample.time.toSeconds());
-	  vel[1] = relY / (ts.toSeconds() - oldSample.time.toSeconds());
-	  vel[2] = 0;
+	  base::Vector3d vel = relPos / (ts.toSeconds() - oldSample.time.toSeconds());	  
+	 
+	  /*	  
+	  std::cout << "Yaw:      " << base::getYaw(ekf.getRotation()) << std::endl;
+	  std::cout << "Avg-yaw:  " << base::getYaw(avg_ori) << std::endl;
+	  std::cout << "Act. pos: " << pos.transpose() << std::endl;
+	  std::cout << "Old. pos: " << oldSample.position.transpose() << std::endl;
+	  std::cout << "DeltaPos: " << (pos - oldSample.position).transpose() << std::endl;
+	  std::cout << "Velocity: " << vel.transpose() << std::endl;
+	  std::cout << "Delta t:  " << (ts.toSeconds() - oldSample.time.toSeconds()) << std::endl;
+	  std::cout << "--------------------------" << std::endl; */
 	  
 	  base::Matrix3d covar = base::Matrix3d::Identity() * _velocity_error.get() ;
 	  actualVelocity = vel;
@@ -173,7 +178,7 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
     
     sum += rbs.velocity[1] * rbs.velocity[1];
     count++;
-    std::cout << "Sum vel: " << sum << " Varianz: " << sum/count << " Std-Abweichung: " << std::sqrt(sum/count) <<  std::endl;
+    //std::cout << "Sum vel: " << sum << " Varianz: " << sum/count << " Std-Abweichung: " << std::sqrt(sum/count) <<  std::endl;
     rbs.orientation = lastOrientation;
     rbs.angular_velocity = orientation_samples_sample.angular_velocity;
     rbs.time = base::Time::now();
