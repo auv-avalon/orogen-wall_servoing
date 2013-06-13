@@ -173,7 +173,10 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
       rbs.velocity = actualVelocity;
     else if(_use_gps_velocity.get() == 0)
       rbs.velocity = base::Vector3d::Zero();
-    else
+    else if(_use_gps_velocity.get() == 3){
+      rbs.velocity = base::Vector3d::Zero();
+      rbs.velocity[0] = actualVelocity[0];
+    }else      
       rbs.velocity = ekf.getVelocity();
     
     sum += rbs.velocity[1] * rbs.velocity[1];
