@@ -137,7 +137,7 @@ namespace asv_localization {
 	base::Quaterniond imuRotation;
 	
 	base::Vector3d actualVelocity;
-	base::Vector3d relativeGps;
+	base::Vector3d relativeGps;	
 	
 	double sum;
 	double count;

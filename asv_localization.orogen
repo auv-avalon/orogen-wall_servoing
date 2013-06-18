@@ -79,6 +79,8 @@ task_context "Task" do
     property("relative_gps_position", "base/Vector3d").
       doc("Position of the gps in the body frame")
 	
+    property("gps_timeout", "double", 10.0)
+    property("orientation_timeout", "double", 10.0)
     
     
     #----------------------------

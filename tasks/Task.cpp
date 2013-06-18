@@ -164,30 +164,34 @@ void Task::orientation_samplesCallback(const base::Time &ts, const ::base::sampl
   
   //Write out actual state  
   if(firstPositionRecieved){
-    
-    base::samples::RigidBodyState rbs;
-    rbs.position = ekf.getPosition();
-    rbs.position[2] = 0.0;
-    
-    if(_use_gps_velocity.get() == 1)
-      rbs.velocity = actualVelocity;
-    else if(_use_gps_velocity.get() == 0)
-      rbs.velocity = base::Vector3d::Zero();
-    else if(_use_gps_velocity.get() == 3){
-      rbs.velocity = base::Vector3d::Zero();
-      rbs.velocity[0] = actualVelocity[0];
-    }else      
-      rbs.velocity = ekf.getVelocity();
-    
-    sum += rbs.velocity[1] * rbs.velocity[1];
-    count++;
-    //std::cout << "Sum vel: " << sum << " Varianz: " << sum/count << " Std-Abweichung: " << std::sqrt(sum/count) <<  std::endl;
-    rbs.orientation = lastOrientation;
-    rbs.angular_velocity = orientation_samples_sample.angular_velocity;
-    rbs.time = base::Time::now();
-    rbs.cov_position = ekf.getPositionCovariance();
-    rbs.cov_velocity = ekf.getVelocityCovariance();
-    _pose_samples.write(rbs);
+    if(base::Time::now().toSeconds()	- lastGpsTime.toSeconds() < _gps_timeout.get()){    
+      
+      base::samples::RigidBodyState rbs;
+      rbs.position = ekf.getPosition();
+      rbs.position[2] = 0.0;
+      
+      if(_use_gps_velocity.get() == 1)
+	rbs.velocity = actualVelocity;
+      else if(_use_gps_velocity.get() == 0)
+	rbs.velocity = base::Vector3d::Zero();
+      else if(_use_gps_velocity.get() == 3){
+	rbs.velocity = base::Vector3d::Zero();
+	rbs.velocity[0] = actualVelocity[0];
+      }else      
+	rbs.velocity = ekf.getVelocity();
+      
+      sum += rbs.velocity[1] * rbs.velocity[1];
+      count++;
+      //std::cout << "Sum vel: " << sum << " Varianz: " << sum/count << " Std-Abweichung: " << std::sqrt(sum/count) <<  std::endl;
+      rbs.orientation = lastOrientation;
+      rbs.angular_velocity = orientation_samples_sample.angular_velocity;
+      rbs.time = base::Time::now();
+      rbs.cov_position = ekf.getPositionCovariance();
+      rbs.cov_velocity = ekf.getVelocityCovariance();
+      _pose_samples.write(rbs);
+    }else{
+      std::cerr << "GPS-Timeout" << std::endl;
+    }  
     
   }  
   
@@ -321,6 +325,7 @@ bool Task::startHook()
     
 
     //ekf = pose_ekf::KFD_PosVelAcc();
+    lastGpsTime = base::Time::now();
     
     return true;
     
