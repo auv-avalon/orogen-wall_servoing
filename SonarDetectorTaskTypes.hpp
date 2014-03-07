@@ -10,6 +10,14 @@
 namespace sonar_detectors
 {
 
+struct Wall{
+    base::Time time;
+    double wall_angle;
+    double wall_distance;
+    Wall()
+    : time(base::Time::now()), wall_angle(base::unknown<double>()), wall_distance(base::unknown<double>()){}
+};
+
 struct WallServoingDebugData
 {
     base::samples::Pointcloud pointCloud;

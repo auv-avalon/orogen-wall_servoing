@@ -51,26 +51,20 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
     front_cam = TaskContext.get 'front_camera'
     front_cam.name = 'front_cam'
     front_cam.configure
-    front_cam.start
+   # front_cam.start
     
     bottom_cam = TaskContext.get 'bottom_camera'
     bottom_cam.name = 'bottom_cam'
     bottom_cam.configure
-    bottom_cam.start
+   # bottom_cam.start
     
-    top_cam = TaskContext.get 'top_camera'
-    top_cam.name = 'top_cam'
-    top_cam.configure
-    top_cam.start
-
-
     sonar = TaskContext.get 'sonar'
     sonar.node_name = "sonar_top_sensor"
-    sonar.left_limit = Math::PI
-    sonar.right_limit = -Math::PI
+    sonar.left_limit = 0.75 * Math::PI
+    sonar.right_limit = -0.25 * Math::PI
     sonar.resolution = 0.1
     sonar.maximum_distance = 40.0
-    sonar.ping_pong_mode = false
+    sonar.ping_pong_mode = true
     sonar.configure
     sonar.start
     
@@ -82,7 +76,7 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
     sonar_rear.maximum_distance = 40.0
     sonar_rear.ping_pong_mode = true
     sonar_rear.configure
-    sonar_rear.start
+   # sonar_rear.start
         
     ground_distance = TaskContext.get 'ground_distance'
     ground_distance.node_name = "ground_distance_sensor"
@@ -104,7 +98,7 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
    # wall_servoing.dbscan_epsilon = 0.08726646259971647 * 1.5
     wall_servoing.fading_out_factor = 0.02
     # controller settings
-    wall_servoing.wall_distance = 2.0
+    wall_servoing.wall_distance = 3.0
     wall_servoing.fixed_depth = -2.5
     wall_servoing.servoing_speed = -0.4
     wall_servoing.exploration_speed = 0.1
@@ -137,6 +131,21 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
     feature_estimator.configure
     feature_estimator.start
     
+    ## wall_servoing
+    wall_detector = Orocos::TaskContext.get 'wall_detector'
+    # wall estimation settings
+    wall_detector.opening_angle = 0.1 * Math::PI
+    wall_detector.fading_out_factor = 0.006
+    wall_detector.wall_direction =  Math::PI
+    # controller settings
+    
+    imu.pose_samples.connect_to(wall_detector.orientation_sample)
+    imu.pose_samples.connect_to(wall_detector.position_sample)
+    feature_estimator.new_feature.connect_to wall_detector.sonarbeam_feature, :type => :buffer, :size => 100
+    
+    wall_detector.configure
+    wall_detector.start
+    ##
 #Control Draft
 ###########################WORLD_TO_ALIGNED
     world_to_aligned = TaskContext.get 'world_to_aligned'
