@@ -7,7 +7,10 @@ Orocos.initialize
 #view3d = Vizkit.vizkit3d_widget
 #view3d.show()
 
-Orocos.run "avalon_back_base_control", "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_feature_estimator" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
+Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_feature_estimator" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
+    
+
+    Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_PROJECT_BASE'],"bundles", "avalon", "config", "orogen")) 
     simulation = TaskContext.get 'avalon_simulation'
     
       white_light = TaskContext.get 'white_light'
@@ -18,11 +21,7 @@ Orocos.run "avalon_back_base_control", "AvalonSimulation" , "wall_servoing_test"
       white_light.randomInterval_max = 5000;
       white_light.start
       
-simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon_simulation/configuration/testhalle.scn"
-
-    simulation.debug_sonar = false 
-    simulation.use_osg_ocean = false 
-    simulation.enable_gui = true
+    Orocos.conf.apply(simulation,['default'])
     simulation.configure
     simulation.start
 
@@ -134,9 +133,10 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
     ## wall_servoing
     wall_detector = Orocos::TaskContext.get 'wall_detector'
     # wall estimation settings
-    wall_detector.opening_angle = 0.1 * Math::PI
+    wall_detector.opening_angle = 0.2 * Math::PI
     wall_detector.fading_out_factor = 0.006
-    wall_detector.wall_direction =  Math::PI
+    wall_detector.wall_direction =  0.5 * Math::PI
+    wall_detector.use_motion_model = false
     # controller settings
     
     imu.pose_samples.connect_to(wall_detector.orientation_sample)
@@ -150,374 +150,83 @@ simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon
 ###########################WORLD_TO_ALIGNED
     world_to_aligned = TaskContext.get 'world_to_aligned'
     
-    expected = world_to_aligned.expected_inputs
-    expected.linear[0] = false
-    expected.linear[1] = false
-    expected.linear[2] = true
-    expected.angular[0] = true
-    expected.angular[1] = true
-    expected.angular[2] = false
-    world_to_aligned.expected_inputs = expected
+    Orocos.conf.apply(world_to_aligned,['default'])
     
-    world_to_aligned.timeout_in = 0
-    world_to_aligned.timeout_cascade = 0
+    expected = world_to_aligned.expected_inputs
+        expected.linear[0] = false
+        expected.linear[1] = false
+        expected.linear[2] = true
 
-    world_to_aligned.position_control = true
+        expected.angular[0] = false
+        expected.angular[1] = true
+        expected.angular[2] = false
+    world_to_aligned.expected_inputs = expected
 
     imu.pose_samples.connect_to(world_to_aligned.pose_samples)
     
     world_to_aligned.configure()
-    world_to_aligned.start()
 ###########################ALIGNED_POSITION_CONTROLLER
     apc = TaskContext.get 'aligned_position_controller'
     
+    Orocos.conf.apply(apc,['default_aligned_position_simulation'])
+    
     expected = apc.expected_inputs
-    expected.linear[0] = false
-    expected.linear[1] = true
-    expected.linear[2] = true
-    expected.angular[0] = true
-    expected.angular[1] = true
-    expected.angular[2] = true
-    apc.expected_inputs = expected
-    
-    apc.timeout_in = 0
-    apc.timeout_cascade = 0
+        expected.linear[0] = false
+        expected.linear[1] = true
+        expected.linear[2] = true
 
-    apc.position_control = true
-    apc.world_frame = false
-    
-    pid = apc.pid_settings
-    pid_linear = pid.linear
-    setting = pid_linear[0]
-    setting.Ts   = 0.01
-    setting.K    = 1
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -2.0
-    setting.YMax = 2.0
-    pid_linear[0] = setting
-    setting = pid_linear[1]
-    setting.Ts   = 0.01
-    setting.K    = 1
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_linear[1] = setting
-    setting = pid_linear[2]
-    setting.Ts   = 0.01
-    setting.K    = 0.1
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_linear[2] = setting
-    pid.linear = pid_linear
-    pid_angular = pid.angular
-    setting = pid_angular[0]
-    setting.Ts   = 0.01
-    setting.K    = 0.00000000000000001
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_angular[0] = setting
-    setting = pid_angular[1]
-    setting.Ts   = 0.01
-    setting.K    = 0.2
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_angular[1] = setting
-    setting = pid_angular[2]
-    setting.Ts   = 0.01
-    setting.K    = 0.4 #0.2
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -0.6 #-1
-    setting.YMax = 0.6 #1
-    pid_angular[2] = setting
-    pid.angular = pid_angular
-    apc.pid_settings = pid
+        expected.angular[0] = false
+        expected.angular[1] = true
+        expected.angular[2] = true
+    apc.expected_inputs = expected
     
     imu.pose_samples.connect_to(apc.pose_samples)
     
     apc.configure()
-    apc.start()
 ###########################ALIGNED_VELOCITY_CONTROLLER
     avc = TaskContext.get 'aligned_velocity_controller'
     
-    expected = avc.expected_inputs
-    expected.linear[0] = true
-    expected.linear[1] = true
-    expected.linear[2] = true
-    expected.angular[0] = true
-    expected.angular[1] = true
-    expected.angular[2] = true
-    avc.expected_inputs = expected
-    
-    avc.timeout_in = 0
-    avc.timeout_cascade = 0
-
-    avc.position_control = false
-    avc.world_frame = false
-    
-    pid = avc.pid_settings
-    pid_linear = pid.linear
-    setting = pid_linear[0]
-    setting.Ts   = 0.01
-    setting.K    = 1
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_linear[0] = setting
-    setting = pid_linear[1]
-    setting.Ts   = 0.01
-    setting.K    = 1
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_linear[1] = setting
-    setting = pid_linear[2]
-    setting.Ts   = 0.01
-    setting.K    = 1.65
-    setting.Ti   = 0.215
-    setting.Td   = 0.388
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_linear[2] = setting
-    pid.linear = pid_linear
-    pid_angular = pid.angular
-    setting = pid_angular[0]
-    setting.Ts   = 0.01
-    setting.K    = 0.0000000001
-    setting.Ti   = 0
-    setting.Td   = 0
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_angular[0] = setting
-    setting = pid_angular[1]
-    setting.Ts   = 0.01
-    setting.K    = 2
-    setting.Ti   = 0#0.02
-    setting.Td   = 0#0.0133333333
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_angular[1] = setting
-    setting = pid_angular[2]
-    setting.Ts   = 0.01
-    setting.K    = 5
-    setting.Ti   = 0#1.375
-    setting.Td   = 0#0.09166
-    setting.N    = 0
-    setting.B    = 1
-    setting.Tt   = -1
-    setting.YMin = -1.0
-    setting.YMax = 1.0
-    pid_angular[2] = setting
-    pid.angular = pid_angular
-    avc.pid_settings = pid
+    Orocos.conf.apply(avc,['default_aligned_velocity_simulation'])
     
     imu.pose_samples.connect_to(avc.pose_samples)
     
     avc.configure()
-    avc.start()
 ###########################ALIGNED_TO_BODY
     aligned_to_body = TaskContext.get 'aligned_to_body'
     
-    expected = aligned_to_body.expected_inputs
-    expected.linear[0] = true
-    expected.linear[1] = true
-    expected.linear[2] = true
-    expected.angular[0] = true
-    expected.angular[1] = true
-    expected.angular[2] = true
-    aligned_to_body.expected_inputs = expected
-    
-    aligned_to_body.timeout_in = 0
-    aligned_to_body.timeout_cascade = 0
+    Orocos.conf.apply(aligned_to_body,['default'])
 
     imu.pose_samples.connect_to(aligned_to_body.orientation_samples)
     
     aligned_to_body.configure()
-    aligned_to_body.start()
 
     
 ###########################ACCELERATION_CONTROLLER
     acceleration_controller = TaskContext.get 'acceleration_controller'
     
-    expected = acceleration_controller.expected_inputs
-    expected.linear[0] = true
-    expected.linear[1] = true
-    expected.linear[2] = true
-    expected.angular[0] = true
-    expected.angular[1] = true
-    expected.angular[2] = true
-    acceleration_controller.expected_inputs = expected
+    Orocos.conf.apply(acceleration_controller,['default_simulation'])
     
-    acceleration_controller.timeout_in = 0
-    acceleration_controller.timeout_cascade = 0
-
-    matrix = acceleration_controller.matrix
-    
-    matrix.resize(6,6)
-    matrix[0, 0] = 0
-    matrix[0, 1] = 0
-    matrix[0, 2] = -1 #-0.6
-    matrix[0, 3] = -1 #-0.65
-    matrix[0, 4] = 0
-    matrix[0, 5] = 0
-
-    matrix[1, 0] = 0
-    matrix[1, 1] = 0
-    matrix[1, 2] = 0
-    matrix[1, 3] = 0
-    matrix[1, 4] = 0.0001 #0.2
-    matrix[1, 5] = -0.8 #-0.55
-
-    matrix[2, 0] = 0.02 #0.3
-    matrix[2, 1] = 1.0 #-0.6
-    matrix[2, 2] = 0
-    matrix[2, 3] = 0
-    matrix[2, 4] = 0
-    matrix[2, 5] = 0
-
-    matrix[3, 0] = 0
-    matrix[3, 1] = 0
-    matrix[3, 2] = 0
-    matrix[3, 3] = 0
-    matrix[3, 4] = 0
-    matrix[3, 5] = 0
-
-    matrix[4, 0] = 1.0 #0.45
-    matrix[4, 1] = -0.1 #0.15
-    matrix[4, 2] = 0
-    matrix[4, 3] = 0
-    matrix[4, 4] = 0
-    matrix[4, 5] = 0
-
-    matrix[5, 0] = 0
-    matrix[5, 1] = 0
-    matrix[5, 2] = 0
-    matrix[5, 3] = 0
-    matrix[5, 4] = -1.0 #-0.6
-    matrix[5, 5] = -0.2 #-0.4
-    acceleration_controller.matrix = matrix
-
-    acceleration_controller.cmd_out.connect_to(actuators.command) 
-
     acceleration_controller.configure
-    acceleration_controller.start
-
-    
-    writer_ac_in = acceleration_controller.cmd_in.writer
+###########################CONNECTIONS
+   
+    acceleration_controller.cmd_out.connect_to(actuators.command) 
     aligned_to_body.cmd_out.connect_to(acceleration_controller.cmd_cascade)
-    writer_atb_in = aligned_to_body.cmd_in.writer
     avc.cmd_out.connect_to(aligned_to_body.cmd_cascade)
     wall_servoing.aligned_velocity_command.connect_to(avc.cmd_in)
     apc.cmd_out.connect_to(avc.cmd_cascade)
     wall_servoing.aligned_position_command.connect_to(apc.cmd_in)
     world_to_aligned.cmd_out.connect_to(apc.cmd_cascade)
     wall_servoing.world_command.connect_to(world_to_aligned.cmd_in)
-    writer_wta_cas = world_to_aligned.cmd_cascade.writer
-
+    
+    world_to_aligned.start
+    apc.start
+    puts "sleep5"
+    sleep 5
+    avc.start
+    aligned_to_body.start
+    acceleration_controller.start
     
     loop do
-        sample = writer_ac_in.new_sample
-        sample.time = Time.now
-        sample.linear[0] = NaN
-        sample.linear[1] = NaN
-        sample.linear[2] = NaN
-        sample.angular[0] = NaN
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_ac_in.write(sample)
-        
-        sample = writer_atb_in.new_sample
-        sample.time = Time.now
-        sample.linear[0] = NaN
-        sample.linear[1] = NaN
-        sample.linear[2] = NaN
-        sample.angular[0] = NaN
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_atb_in.write(sample)
-=begin
-        sample = writer_avc_in.new_sample
-        sample.time = Time.now
-        sample.linear[0] = -0.5
-        sample.linear[1] = NaN
-        sample.linear[2] = NaN
-        sample.angular[0] = NaN
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_avc_in.write(sample)
-
-        sample = writer_apc_in.new_sample
-        sample.time = Time.now
-        sample.linear[0] = NaN
-        sample.linear[1] = 0.5
-        sample.linear[2] = NaN
-        sample.angular[0] = NaN
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_apc_in.write(sample)
-        
-        sample = writer_wta_in.new_sample
-        sample.time = Time.now
-        sample.linear[0] = NaN
-        sample.linear[1] = NaN
-        sample.linear[2] = NaN
-        sample.angular[0] = NaN
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_wta_in.write(sample)
-=end
-        sample = writer_wta_cas.new_sample
-        sample.time = Time.now
-        sample.linear[0] = NaN
-        sample.linear[1] = NaN
-        sample.linear[2] = NaN
-        sample.angular[0] = 0
-        sample.angular[1] = NaN
-        sample.angular[2] = NaN
-        writer_wta_cas.write(sample)
         sleep 0.5
     end
 

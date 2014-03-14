@@ -9,13 +9,14 @@ Orocos.initialize
 
 Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_test', 'auv_rel_pos_controller::Task' => 'auv_rel_pos_controller' , 'avalon_control::MotionControlTask' => 'motion_control', :wait => 10  do
 
+    Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_PROJECT_BASE'],"bundles", "avalon", "config", "orogen")) 
+    
     ## simulator
     simulation = TaskContext.get 'avalon_simulation'
-    simulation.debug_sonar = 1
-    simulation.enable_gui = true
-    simulation.use_osg_ocean = false
+    Orocos.conf.apply(simulation,['default'])
     simulation.configure
     simulation.start
+    
     actuators = TaskContext.get 'actuators'
     actuators.configure
     actuators.start

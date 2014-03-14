@@ -30,18 +30,15 @@ WallDetector::~WallDetector()
 
 bool WallDetector::configureHook()
 {
-    std::cout << "CONFIGURE" << std::endl;
     if (! WallDetectorBase::configureHook())
         return false;
     return true;
 }
 bool WallDetector::startHook()
 {
-    std::cout << "START 0" << std::endl;
     if (! WallDetectorBase::startHook())
         return false;
     
-    std::cout << "START 1" << std::endl;
     // check if input ports are connected
     if (!_sonarbeam_feature.connected())
     {
@@ -70,7 +67,6 @@ bool WallDetector::startHook()
     centerWallEstimation->setFadingOutFactor(_fading_out_factor.get());
     centerWallEstimation->setMinScanPoints(4);
     last_feature_in_range = false; 
-
     return true;
 }
 void WallDetector::updateHook()
@@ -111,7 +107,12 @@ void WallDetector::updateHook()
     sonar_detectors::Wall wall_out;
 
     wall_out.wall_angle = detected_orientation;
-    wall_out.wall_distance = detected_distance + (cos(detected_orientation) * (current_position.position.y() - detected_position.position.y()) + sin(detected_orientation) * (current_position.position.x() - detected_position.position.x()));
+    
+    if(_use_motion_model){
+        wall_out.wall_distance = detected_distance + ((-cos(detected_orientation) * (current_position.position.y() - detected_position.position.y())) + (sin(detected_orientation) * (current_position.position.x() - detected_position.position.x())));
+    } else{
+        wall_out.wall_distance = detected_distance;
+    }
 
     _wall.write(wall_out);
 

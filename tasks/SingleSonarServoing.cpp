@@ -30,6 +30,7 @@ SingleSonarServoing::~SingleSonarServoing()
 
 bool SingleSonarServoing::startHook()
 {
+    std::cout << "IM START-HOCK!" << std::endl;
     last_state = PRE_OPERATIONAL;
     wall_state = NO_WALL_FOUND;
     checking_count = 0;
@@ -87,6 +88,7 @@ bool SingleSonarServoing::startHook()
     frontWallEstimation->setMinScanPoints(2);
 
 
+    std::cout << "IM START-HOCK FERTIG!" << std::endl;
     return true;
 }
 
@@ -533,15 +535,22 @@ void SingleSonarServoing::updateHook()
         _position_command.write(positionCommand);
     
     // write aligned position command
-    if (_aligned_velocity_command.connected())
+    if (_aligned_velocity_command.connected()){
+        alignedVelocityCommand.time = base::Time::now();
+        alignedVelocityCommand.angular(0) = 0;
         _aligned_velocity_command.write(alignedVelocityCommand);
+    }
     
-    if (_aligned_position_command.connected())
+    if (_aligned_position_command.connected()){
+        alignedPositionCommand.time = base::Time::now();
         _aligned_position_command.write(alignedPositionCommand);
-    
-    if (_world_command.connected())
+    }
+
+    if (_world_command.connected()){
+        worldCommand.time = base::Time::now();
         _world_command.write(worldCommand);
-    
+    }
+
     // write detection debug data
     if(_enable_debug_output.get())
     {
@@ -567,6 +576,7 @@ void SingleSonarServoing::errorHook()
 
 void SingleSonarServoing::stopHook()
 {
+    std::cout << "IM STOP_HOCK!" << std::endl;
     SingleSonarServoingBase::stopHook();
 }
 
