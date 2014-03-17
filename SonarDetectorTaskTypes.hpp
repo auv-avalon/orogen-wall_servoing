@@ -14,6 +14,7 @@ struct Wall{
     base::Time time;
     double wall_angle;
     double wall_distance;
+    double last_detection;
     Wall()
     : time(base::Time::now()), wall_angle(base::unknown<double>()), wall_distance(base::unknown<double>()){}
 };

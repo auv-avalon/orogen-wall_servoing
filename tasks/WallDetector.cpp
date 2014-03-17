@@ -79,11 +79,12 @@ void WallDetector::updateHook()
 
     base::Angle left_limit = base::Angle::fromRad(_wall_direction.get() + _opening_angle.get()); 
     base::Angle right_limit = base::Angle::fromRad(_wall_direction.get() - _opening_angle.get()); 
+    base::Angle opening = base::Angle::fromRad(_opening_angle.get());
 
     base::samples::LaserScan feature;
     while (_sonarbeam_feature.read(feature) == RTT::NewData){ 
         centerWallEstimation->setEstimationZone(left_limit, right_limit); 
-        centerWallEstimation->setWallAngleVariance(_opening_angle.get() * 0.3);
+        centerWallEstimation->setWallAngleVariance(opening.getRad() * 0.3);
         centerWallEstimation->setSupposedWallAngle(base::Angle::fromRad(_wall_direction.get()));
         
         //Calculate offset to handle the change over PI -> -PI
@@ -98,13 +99,26 @@ void WallDetector::updateHook()
                 detected_distance = sonar_detectors::length(wall.first);
                 detected_orientation = atan2(wall.second.y(), wall.second.x());
                 detected_position = current_position;
+                last_wall_estimation = base::Time::now();
+                if(state() != WALL_FOUND){
+                    state(WALL_FOUND);
+                }
             }
             
             last_feature_in_range = false;
         }
     }
-
+    
     sonar_detectors::Wall wall_out;
+    wall_out.last_detection = (base::Time::now()-last_wall_estimation).toSeconds(); 
+
+    if(wall_out.last_detection>_wall_estimation_timeout.get()){
+        detected_distance = base::unset<double>();
+        detected_orientation = base::unset<double>();
+        if(state() != WALL_SEARCHING){
+            state(WALL_SEARCHING);
+        }
+    }
 
     wall_out.wall_angle = detected_orientation;
     

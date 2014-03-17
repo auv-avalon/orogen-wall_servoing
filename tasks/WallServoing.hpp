@@ -1,16 +1,13 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.hpp */
 
-#ifndef WALL_SERVOING_WALLDETECTOR_TASK_HPP
-#define WALL_SERVOING_WALLDETECTOR_TASK_HPP
+#ifndef WALL_SERVOING_WALLSERVOING_TASK_HPP
+#define WALL_SERVOING_WALLSERVOING_TASK_HPP
 
-#include "wall_servoing/WallDetectorBase.hpp"
-#include <sonar_detectors/CenterWallEstimation.hpp>
-#include <sonar_detectors/MWallEstimation.hpp>
-#include <sonar_detectors/SonarWallMap.hpp>
+#include "wall_servoing/WallServoingBase.hpp"
 
 namespace wall_servoing {
 
-    /*! \class WallDetector 
+    /*! \class WallServoing 
      * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
      * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
      * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
@@ -19,43 +16,36 @@ namespace wall_servoing {
      * The name of a TaskContext is primarily defined via:
      \verbatim
      deployment 'deployment_name'
-         task('custom_task_name','wall_servoing::WallDetector')
+         task('custom_task_name','wall_servoing::WallServoing')
      end
      \endverbatim
      *  It can be dynamically adapted when the deployment is called with a prefix argument. 
      */
-    class WallDetector : public WallDetectorBase
+    class WallServoing : public WallServoingBase
     {
-	friend class WallDetectorBase;
+	friend class WallServoingBase;
     protected:
-        sonar_detectors::CenterWallEstimation* centerWallEstimation;
-        sonar_detectors::CenterWallEstimation* frontWallEstimation;
 
-        base::samples::RigidBodyState current_orientation;
-        base::samples::RigidBodyState current_position;
-        base::samples::RigidBodyState detected_position;
-        double detected_distance;
-        double detected_orientation;
+    bool start;
+    double obstacle_angle;
 
-        bool last_feature_in_range;
-        base::Time last_wall_estimation;
     public:
-        /** TaskContext constructor for WallDetector
+        /** TaskContext constructor for WallServoing
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
          */
-        WallDetector(std::string const& name = "wall_servoing::WallDetector", TaskCore::TaskState initial_state = Stopped);
+        WallServoing(std::string const& name = "wall_servoing::WallServoing", TaskCore::TaskState initial_state = Stopped);
 
-        /** TaskContext constructor for WallDetector 
+        /** TaskContext constructor for WallServoing 
          * \param name Name of the task. This name needs to be unique to make it identifiable for nameservices. 
          * \param engine The RTT Execution engine to be used for this task, which serialises the execution of all commands, programs, state machines and incoming events for a task. 
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
          */
-        WallDetector(std::string const& name, RTT::ExecutionEngine* engine, TaskCore::TaskState initial_state = Stopped);
+        WallServoing(std::string const& name, RTT::ExecutionEngine* engine, TaskCore::TaskState initial_state = Stopped);
 
-        /** Default deconstructor of WallDetector
+        /** Default deconstructor of WallServoing
          */
-	~WallDetector();
+	~WallServoing();
 
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
