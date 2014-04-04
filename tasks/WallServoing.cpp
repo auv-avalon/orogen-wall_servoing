@@ -48,12 +48,6 @@ void WallServoing::updateHook()
         start = false;
     }
 
-    base::LinearAngular6DCommand world_cmd;
-    world_cmd.z() = _servoing_depth;
-    world_cmd.roll() = 0;
-    world_cmd.pitch() = 0;
-    base::LinearAngular6DCommand aligned_velocity_cmd;
-
     base::samples::RigidBodyState orientation_sample;
 
     sonar_detectors::Wall obstacle_wall;
@@ -71,48 +65,96 @@ void WallServoing::updateHook()
         return;
     }
 
+    double direction;
+    double servoing_speed;
+    double correction_speed;
+    double max_servoing_speed = _servoing_speed.get();
+    double max_correction_speed = _correction_speed.get();
+    double direction_offset = _servoing_direction.get();
+    bool direction_clockwise = _direction_clockwise.get();
+
     switch(state()){
         case INITIAL_WALL_SEARCH:
-            world_cmd.yaw() = _search_direction.get();
-            aligned_velocity_cmd.x() = (obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get();
-            if(aligned_velocity_cmd.x() > _servoing_speed.get()){
-                aligned_velocity_cmd.x() = _servoing_speed.get();
-            }
-            aligned_velocity_cmd.y() = 0;
+            direction = _search_direction.get();
+            servoing_speed = this->limitSpeed((obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get(), max_servoing_speed);
+            correction_speed = 0;
 
             if(fabs(obstacle_wall.wall_distance - _servoing_distance.get()) < 0.2){
-                obstacle_angle = obstacle_wall.wall_angle;
+                obstacle_angle = this->directionCorrection(obstacle_wall.wall_angle, direction_clockwise);
                 state(CORNER);
             }
             break;
         case CORNER:
-            world_cmd.yaw() = obstacle_angle;
-            aligned_velocity_cmd.x() = 0;
-            aligned_velocity_cmd.y() = 0;
+            {
+            direction = obstacle_angle;
+            servoing_speed = 0;
+            correction_speed = 0;
 
-            if(fabs(base::getYaw(orientation_sample.orientation) - obstacle_angle) < 0.1 &&
-                    obstacle_wall.last_detection > 0.5){
-                state(WALL_SERVOING);
+
+
+            
+            double offset_to_obstacle_angle = fabs(base::getYaw(orientation_sample.orientation) - obstacle_angle - direction_offset);
+            if(offset_to_obstacle_angle > M_PI){
+                offset_to_obstacle_angle = 2*M_PI - offset_to_obstacle_angle;
+            }
+
+            std::cout << "OFFSET_TO_OBSTACLE_ANGLE: " << offset_to_obstacle_angle   << std::endl;
+            
+            if(offset_to_obstacle_angle < 0.02){
+                servoing_detections = 0;
+                obstacle_detections = 0;
+                last_servoing_detection = servoing_wall.last_detection;
+                last_obstacle_detection = obstacle_wall.last_detection;
+                state(LEAVING_CORNER);
+            }
             }
             break;
-        case WALL_SERVOING:
-            world_cmd.yaw() = servoing_wall.wall_angle;
-            aligned_velocity_cmd.x() = (obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get();
-            if(aligned_velocity_cmd.x() > _servoing_speed.get()){    
-               aligned_velocity_cmd.x() = _servoing_speed.get();
+
+        case LEAVING_CORNER: 
+            direction = obstacle_angle;
+            servoing_speed = 0;
+            correction_speed = 0;
+
+            if(obstacle_wall.last_detection < last_obstacle_detection){
+                obstacle_detections++;
             }
-            aligned_velocity_cmd.y() = (servoing_wall.wall_distance - _servoing_distance.get()) * _correction_factor.get();
-            
+            if(servoing_wall.last_detection < last_servoing_detection){
+                servoing_detections++;
+            }
+            last_servoing_detection = servoing_wall.last_detection;
+            last_obstacle_detection = obstacle_wall.last_detection;
+
+            if(obstacle_detections >= 2 && servoing_detections >=2){
+                state(WALL_SERVOING);
+            }
+        break;
+        case WALL_SERVOING:
+            direction = this->directionCorrection(servoing_wall.wall_angle, direction_clockwise);
+            servoing_speed = this->limitSpeed((obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get(), max_servoing_speed);
+            correction_speed = this->limitSpeed((servoing_wall.wall_distance - _servoing_distance.get()) * _correction_factor.get(), max_correction_speed);
+            if(!direction_clockwise){
+                correction_speed = correction_speed * -1;
+            }
+
             if(fabs(obstacle_wall.wall_distance - _servoing_distance.get()) < 0.2){
-                obstacle_angle = obstacle_wall.wall_angle;
+                obstacle_angle = this->directionCorrection(obstacle_wall.wall_angle, direction_clockwise);
                 state(CORNER);
             }
             break;
     }
 
+    base::LinearAngular6DCommand world_cmd;
+    world_cmd.z() = _servoing_depth;
+    world_cmd.roll() = 0;
+    world_cmd.pitch() = 0;
+    world_cmd.yaw() = base::Angle::normalizeRad(direction + direction_offset); 
+    base::LinearAngular6DCommand aligned_velocity_cmd;
+    aligned_velocity_cmd.x() = (cos(_servoing_direction.get())*servoing_speed) + (sin(_servoing_direction.get())*correction_speed); 
+    aligned_velocity_cmd.y() = -(sin(_servoing_direction.get())*servoing_speed) + (cos(_servoing_direction.get())*correction_speed); 
+    //aligned_velocity_cmd.y() = (cos(_servoing_direction.get())*correction_speed); 
+
     _world_command.write(world_cmd);
     _aligned_velocity_command.write(aligned_velocity_cmd);
-
 }
 void WallServoing::errorHook()
 {
@@ -125,4 +167,21 @@ void WallServoing::stopHook()
 void WallServoing::cleanupHook()
 {
     WallServoingBase::cleanupHook();
+}
+
+double WallServoing::limitSpeed(double speed, double limit){
+    if(speed > limit){
+        return limit;
+    } else if(speed < -limit){
+        return -limit;
+    }
+    return speed;
+    
+}
+
+double WallServoing::directionCorrection(double direction, bool clockwise){
+    if(clockwise){
+        return direction;
+    }
+    return base::Angle::normalizeRad(direction + M_PI);
 }

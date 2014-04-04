@@ -28,7 +28,13 @@ namespace wall_servoing {
 
     bool start;
     double obstacle_angle;
+    double last_obstacle_detection;
+    unsigned obstacle_detections;
+    double last_servoing_detection;
+    unsigned servoing_detections;
 
+    double limitSpeed(double speed, double limit);
+    double directionCorrection(double direction, bool clockwise);
     public:
         /** TaskContext constructor for WallServoing
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.

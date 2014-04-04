@@ -103,6 +103,10 @@ void WallDetector::updateHook()
                 if(state() != WALL_FOUND){
                     state(WALL_FOUND);
                 }
+                base::samples::Pointcloud point_cloud;
+                point_cloud.points = centerWallEstimation->getPointCloud();
+                point_cloud.time = base::Time::now();
+                _point_cloud.write(point_cloud);
             }
             
             last_feature_in_range = false;
@@ -128,6 +132,7 @@ void WallDetector::updateHook()
         wall_out.wall_distance = detected_distance;
     }
 
+    wall_out.wall_distance += _offset.get();
     _wall.write(wall_out);
 
 }

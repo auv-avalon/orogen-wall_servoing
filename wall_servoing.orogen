@@ -15,6 +15,8 @@ task_context "WallDetector" do
     property("use_motion_model", "bool", 1)
 
     property("wall_estimation_timeout", "double", 1)
+    
+    property("offset", "double", 0)
 
     input_port('sonarbeam_feature', '/base/samples/LaserScan').
         needs_reliable_connection
@@ -23,6 +25,7 @@ task_context "WallDetector" do
     
     input_port "position_sample", 'base::samples::RigidBodyState'
 
+    output_port("point_cloud", "base::samples::Pointcloud")
 
     output_port("wall", "sonar_detectors::Wall")
 
@@ -48,6 +51,8 @@ task_context "WallServoing" do
 
     property("search_direction", "double", 0.0)
 
+    property("direction_clockwise", "bool", true)
+
     input_port "orientation_sample", 'base::samples::RigidBodyState'
     
     input_port("servoing_wall", "sonar_detectors::Wall")
@@ -58,7 +63,7 @@ task_context "WallServoing" do
     
     output_port("aligned_velocity_command", "base::LinearAngular6DCommand")
 
-    runtime_states "INITIAL_WALL_SEARCH", "CORNER", "WALL_SERVOING"
+    runtime_states "INITIAL_WALL_SEARCH", "CORNER", "LEAVING_CORNER", "WALL_SERVOING"
 
     port_driven "servoing_wall", "obstacle_wall"
 end

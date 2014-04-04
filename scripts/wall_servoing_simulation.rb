@@ -9,7 +9,6 @@ Orocos.initialize
 
 Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_feature_estimator" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
     
-
     Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_PROJECT_BASE'],"bundles", "avalon", "config", "orogen")) 
     simulation = TaskContext.get 'avalon_simulation'
     
@@ -50,7 +49,7 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     front_cam = TaskContext.get 'front_camera'
     front_cam.name = 'front_cam'
     front_cam.configure
-   # front_cam.start
+    front_cam.start
     
     bottom_cam = TaskContext.get 'bottom_camera'
     bottom_cam.name = 'bottom_cam'
@@ -134,8 +133,8 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     servoing_wall_detector = Orocos::TaskContext.get 'servoing_wall_detector'
     # wall estimation settings
     servoing_wall_detector.opening_angle = 0.2 * Math::PI
-    servoing_wall_detector.fading_out_factor = 0.006
-    servoing_wall_detector.wall_direction =  0.5 * Math::PI
+    servoing_wall_detector.fading_out_factor = 0.04
+    servoing_wall_detector.wall_direction =  -0.3 * Math::PI
     servoing_wall_detector.use_motion_model = true
     servoing_wall_detector.wall_estimation_timeout = 10
     
@@ -150,10 +149,11 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     obstacle_wall_detector = Orocos::TaskContext.get 'obstacle_wall_detector'
     # wall estimation settings
     obstacle_wall_detector.opening_angle = 0.1 * Math::PI
-    obstacle_wall_detector.fading_out_factor = 0.006
-    obstacle_wall_detector.wall_direction =  0.0 * Math::PI
+    obstacle_wall_detector.fading_out_factor = 0.04
+    obstacle_wall_detector.wall_direction =  0.2 * Math::PI
     obstacle_wall_detector.use_motion_model = true
     obstacle_wall_detector.wall_estimation_timeout = 10
+    obstacle_wall_detector.offset = 0.6
     # controller settings
     
     imu.pose_samples.connect_to(obstacle_wall_detector.orientation_sample)
@@ -165,14 +165,15 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     
     # New Wall Servoing
     wall_follower = Orocos::TaskContext.get "wall_servoing_new"
-    wall_follower.servoing_direction = 0.0
-    wall_follower.servoing_depth = -2.5
-    wall_follower.servoing_speed = 0.2
-    wall_follower.servoing_factor = 0.1
-    wall_follower.servoing_distance = 3.0
-    wall_follower.correction_speed = 0.1
+    wall_follower.servoing_direction = -0.2 * Math::PI
+    wall_follower.servoing_depth = -2.0
+    wall_follower.servoing_speed = 1.0
+    wall_follower.servoing_factor = 0.2
+    wall_follower.servoing_distance = 2.0
+    wall_follower.correction_speed = 1.0
     wall_follower.correction_factor = 0.5
     wall_follower.search_direction = 0.0
+    wall_follower.direction_clockwise = false
 
     servoing_wall_detector.connect_to(wall_follower.servoing_wall)
     obstacle_wall_detector.connect_to(wall_follower.obstacle_wall)
@@ -251,8 +252,6 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     world_to_aligned.cmd_out.connect_to(apc.cmd_cascade)
     wall_follower.world_command.connect_to(world_to_aligned.cmd_in)
     
-    puts "sleep 15"
-    sleep 5
     puts "sleep 10"
     sleep 5
     puts "sleep  5"

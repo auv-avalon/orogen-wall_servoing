@@ -99,7 +99,7 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     # controller settings
     wall_servoing.wall_distance = 3.0
     wall_servoing.fixed_depth = -2.5
-    wall_servoing.servoing_speed = -0.4
+    wall_servoing.servoing_speed = -1.0
     wall_servoing.exploration_speed = 0.1
     wall_servoing.servoing_wall_direction = 0.5*Math::PI #-0.25 * Math::PI - 0.8  #0.4#0.78538 # 1/4 PI
     wall_servoing.initial_wall_direction = 0.0
@@ -133,9 +133,9 @@ Orocos.run "AvalonSimulation" , "wall_servoing_test", "sonar_feature_estimator::
     ## wall_servoing
     wall_detector = Orocos::TaskContext.get 'wall_detector'
     # wall estimation settings
-    wall_detector.opening_angle.rad = 0.2 * Math::PI
+    wall_detector.opening_angle = 0.2 * Math::PI
     wall_detector.fading_out_factor = 0.006
-    wall_detector.wall_direction.rad =  0.5 * Math::PI
+    wall_detector.wall_direction =  0.5 * Math::PI
     wall_detector.use_motion_model = true
     wall_detector.wall_estimation_timeout = 10
     # controller settings
