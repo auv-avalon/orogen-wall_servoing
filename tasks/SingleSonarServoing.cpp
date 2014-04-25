@@ -586,8 +586,13 @@ void SingleSonarServoing::cleanupHook()
     if (centerWallEstimation)
     {
         delete centerWallEstimation;
-	delete frontWallEstimation;
         centerWallEstimation = 0;
+    }
+    
+    if(frontWallEstimation)
+    {
+        delete frontWallEstimation;
+        frontWallEstimation = 0;
     }
 }
 
