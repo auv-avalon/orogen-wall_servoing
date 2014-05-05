@@ -36,16 +36,14 @@ bool WallServoing::startHook()
         return false;
 
     start = true;
-
-    return true;
 }
 void WallServoing::updateHook()
 {
     WallServoingBase::updateHook();
 
-    if(start){
-        state(INITIAL_WALL_SEARCH);
+    if(start){ 
         start = false;
+        state(GET_INITIAL_WALL_SEARCH_DIRECTION);
     }
 
     base::samples::RigidBodyState orientation_sample;
@@ -74,6 +72,39 @@ void WallServoing::updateHook()
     bool direction_clockwise = _direction_clockwise.get();
 
     switch(state()){
+        case GET_INITIAL_WALL_SEARCH_DIRECTION:
+            {
+            direction = _search_direction.get();
+            servoing_speed = 0;
+            correction_speed = 0;
+
+            double offset_to_search_angle = fabs(base::Angle::normalizeRad(base::getYaw(orientation_sample.orientation) -_search_direction.get() - direction_offset));
+            std::cout << "OFFSET_TO_SEARCH: " << offset_to_search_angle << std::endl;
+
+            if(offset_to_search_angle < 0.02){
+                obstacle_detections = 0;
+                last_obstacle_detection = obstacle_wall.last_detection;
+                state(LEAVING_GET_INITIAL_WALL_SEARCH_DIRECTION);
+            }
+            }
+            break;
+
+        case LEAVING_GET_INITIAL_WALL_SEARCH_DIRECTION: 
+            direction = _search_direction.get();
+            servoing_speed = 0;
+            correction_speed = 0;
+
+            if(obstacle_wall.last_detection < last_obstacle_detection){
+                obstacle_detections++;
+            }
+            last_obstacle_detection = obstacle_wall.last_detection;
+
+            if(obstacle_detections >= 2){
+                state(INITIAL_WALL_SEARCH);
+            }
+            break;
+
+
         case INITIAL_WALL_SEARCH:
             direction = _search_direction.get();
             servoing_speed = this->limitSpeed((obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get(), max_servoing_speed);
@@ -89,16 +120,13 @@ void WallServoing::updateHook()
             direction = obstacle_angle;
             servoing_speed = 0;
             correction_speed = 0;
-
-
-
             
             double offset_to_obstacle_angle = fabs(base::getYaw(orientation_sample.orientation) - obstacle_angle - direction_offset);
             if(offset_to_obstacle_angle > M_PI){
                 offset_to_obstacle_angle = 2*M_PI - offset_to_obstacle_angle;
             }
 
-            std::cout << "OFFSET_TO_OBSTACLE_ANGLE: " << offset_to_obstacle_angle   << std::endl;
+//          std::cout << "OFFSET_TO_OBSTACLE_ANGLE: " << offset_to_obstacle_angle   << std::endl;
             
             if(offset_to_obstacle_angle < 0.02){
                 servoing_detections = 0;
@@ -127,7 +155,7 @@ void WallServoing::updateHook()
             if(obstacle_detections >= 2 && servoing_detections >=2){
                 state(WALL_SERVOING);
             }
-        break;
+            break;
         case WALL_SERVOING:
             direction = this->directionCorrection(servoing_wall.wall_angle, direction_clockwise);
             servoing_speed = this->limitSpeed((obstacle_wall.wall_distance - _servoing_distance.get()) * _servoing_factor.get(), max_servoing_speed);
@@ -155,6 +183,16 @@ void WallServoing::updateHook()
 
     _world_command.write(world_cmd);
     _aligned_velocity_command.write(aligned_velocity_cmd);
+
+    //For the od controlchain
+
+    base::AUVMotionCommand motion_command;
+    motion_command.x_speed = aligned_velocity_cmd.x();
+    motion_command.y_speed = aligned_velocity_cmd.y();
+    motion_command.z = world_cmd.z();
+    motion_command.heading = world_cmd.yaw();
+
+    _motion_command.write(motion_command);
 }
 void WallServoing::errorHook()
 {

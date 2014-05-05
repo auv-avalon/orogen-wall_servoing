@@ -1,8 +1,19 @@
 name "wall_servoing"
 
 import_types_from "base"
+import_types_from "avalon_base"
 import_types_from "SonarDetectorTaskTypes.hpp"
 import_types_from "auv_control"
+import_types_from "avalon_control"
+using_library "mars_utils", :typekit => false
+using_library "mars_interfaces", :typekit => false
+using_library 'avalon-plugin'
+using_library 'marsusim'
+using_library 'mars_sim'
+using_task_library "avalon_control"
+using_task_library "sonar_feature_estimator"
+using_task_library 'simulation'
+using_task_library 'auv_control'
 using_library "sonar_detectors"
 
 task_context "WallDetector" do
@@ -41,7 +52,7 @@ task_context "WallServoing" do
 
     property("servoing_distance", "double", 3.0)
 
-    property("servoing_speed", "double")
+property("servoing_speed", "double")
 
     property("servoing_factor", "double")
 
@@ -59,11 +70,13 @@ task_context "WallServoing" do
 
     input_port("obstacle_wall", "sonar_detectors::Wall")
 
+    output_port("motion_command", "base::AUVMotionCommand")
+
     output_port("world_command", "base::LinearAngular6DCommand")
     
     output_port("aligned_velocity_command", "base::LinearAngular6DCommand")
 
-    runtime_states "INITIAL_WALL_SEARCH", "CORNER", "LEAVING_CORNER", "WALL_SERVOING"
+    runtime_states "GET_INITIAL_WALL_SEARCH_DIRECTION", "LEAVING_GET_INITIAL_WALL_SEARCH_DIRECTION", "INITIAL_WALL_SEARCH", "CORNER", "LEAVING_CORNER", "WALL_SERVOING"
 
     port_driven "servoing_wall", "obstacle_wall"
 end
@@ -187,4 +200,51 @@ deployment "wall_servoing_test" do
     task("servoing_wall_detector", "WallDetector")
     task("obstacle_wall_detector", "WallDetector")
     task("dual_wall_servoing", "DualSonarServoing")
+	
+    task('avalon_simulation', 'simulation::Mars').
+        periodic(0.1)
+	    
+    task('imu', "simulation::MarsIMU").
+	periodic(0.1)
+
+    task("sonar","simulation::Sonar").
+	periodic 0.066666
+        
+    task("ground_distance","simulation::MarsAltimeter").
+          periodic 0.5
+    
+    task("avalon_actuators","simulation::AuvMotion").
+        periodic 0.5
+
+    task("bottom_camera","simulation::MarsCamera").
+        periodic 0.1
+    task("front_camera","simulation::MarsCamera").
+        periodic 0.1
+
+    task("motion_control", "avalon_control::MotionControlTask")
+
+    task("position_control", "avalon_control::PositionControlTask")
+        
+    task("rel_fake_writer", "avalon_control::RelFakeWriter")
+
+    task("waypoint_navigator", "auv_control::WaypointNavigator").
+        periodic(0.01)
+
+    task("world_to_aligned", "auv_control::WorldToAligned").
+        periodic(0.01)
+
+    task("aligned_position_controller", "auv_control::PIDController").
+        periodic(0.01)
+
+    task("aligned_velocity_controller", "auv_control::PIDController").
+        periodic(0.01)
+
+    task("aligned_to_body", "auv_control::AlignedToBody").
+        periodic(0.01)
+
+    task("acceleration_controller", "auv_control::AccelerationController").
+        periodic(0.01)
+
+    task("optimal_heading_controller", "auv_control::OptimalHeadingController").
+        periodic(0.01)
 end
