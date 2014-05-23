@@ -1,7 +1,6 @@
 name "wall_servoing"
 
 import_types_from "base"
-import_types_from "avalon_base"
 import_types_from "SonarDetectorTaskTypes.hpp"
 import_types_from "auv_control"
 import_types_from "avalon_control"
