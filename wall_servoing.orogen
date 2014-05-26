@@ -4,14 +4,14 @@ import_types_from "base"
 import_types_from "SonarDetectorTaskTypes.hpp"
 import_types_from "auv_control"
 import_types_from "avalon_control"
-using_library "mars_utils", :typekit => false
-using_library "mars_interfaces", :typekit => false
-using_library 'avalon-plugin'
-using_library 'marsusim'
-using_library 'mars_sim'
+#using_library "mars_utils", :typekit => false
+#using_library "mars_interfaces", :typekit => false
+#using_library 'avalon-plugin'
+#using_library 'marsusim'
+#using_library 'mars_sim'
 using_task_library "avalon_control"
 using_task_library "sonar_feature_estimator"
-using_task_library 'simulation'
+#using_task_library 'simulation'
 using_task_library 'auv_control'
 using_library "sonar_detectors"
 
@@ -200,25 +200,25 @@ deployment "wall_servoing_test" do
     task("obstacle_wall_detector", "WallDetector")
     task("dual_wall_servoing", "DualSonarServoing")
 	
-    task('avalon_simulation', 'simulation::Mars').
-        periodic(0.1)
-	    
-    task('imu', "simulation::MarsIMU").
-	periodic(0.1)
-
-    task("sonar","simulation::Sonar").
-	periodic 0.066666
-        
-    task("ground_distance","simulation::MarsAltimeter").
-          periodic 0.5
-    
-    task("avalon_actuators","simulation::AuvMotion").
-        periodic 0.5
-
-    task("bottom_camera","simulation::MarsCamera").
-        periodic 0.1
-    task("front_camera","simulation::MarsCamera").
-        periodic 0.1
+#     task('avalon_simulation', 'simulation::Mars').
+#         periodic(0.1)
+# 	    
+#     task('imu', "simulation::MarsIMU").
+# 	periodic(0.1)
+# 
+#     task("sonar","simulation::Sonar").
+# 	periodic 0.066666
+#         
+#     task("ground_distance","simulation::MarsAltimeter").
+#           periodic 0.5
+#     
+#     task("avalon_actuators","simulation::AuvMotion").
+#         periodic 0.5
+# 
+#     task("bottom_camera","simulation::MarsCamera").
+#         periodic 0.1
+#     task("front_camera","simulation::MarsCamera").
+#         periodic 0.1
 
     task("motion_control", "avalon_control::MotionControlTask")
 
