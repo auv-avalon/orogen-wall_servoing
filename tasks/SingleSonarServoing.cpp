@@ -37,7 +37,7 @@ bool SingleSonarServoing::startHook()
     exploration_checking_count = 0;
     last_distance_to_wall = -1.0;
     last_angle_to_wall.rad = 2.0 * M_PI;
-    origin_wall_angle = M_PI; //TODO hack beccaus we need it so....
+    origin_wall_angle = 2.0 * M_PI;
     alignment_heading.rad = 2.0 * M_PI;
     do_wall_servoing = false;
     wall_servoing = false;
