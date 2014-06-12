@@ -7,8 +7,8 @@
   <url>http://</url>
   <logo>http://</logo>
   <depend package="base/orogen/types" />
-  <depend package="avalon/orogen/sonar_feature_estimator" />
-  <depend package="avalon/sonar_detectors" />
+  <depend package="auv_avalon/orogen/sonar_feature_estimator" />
+  <depend package="auv_avalon/sonar_detectors" />
   <depend package="control/orogen/auv_control" />
   <depend package="avalon/orogen/avalonControl" />
 
