@@ -175,35 +175,15 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
 ###########################WORLD_TO_ALIGNED
     world_to_aligned = TaskContext.get 'world_to_aligned'
     
-    #Orocos.conf.apply(world_to_aligned,['default', 'all'])
+    Orocos.conf.apply(world_to_aligned,['default','no_xy'], true)
     
-    expected = world_to_aligned.expected_inputs
-        expected.linear[0] = false
-        expected.linear[1] = false
-        expected.linear[2] = true
-
-        expected.angular[0] = true
-        expected.angular[1] = true
-        expected.angular[2] = true
-    world_to_aligned.expected_inputs = expected
-
     imu.pose_samples.connect_to(world_to_aligned.pose_samples)
     
     world_to_aligned.configure()
 ###########################ALIGNED_POSITION_CONTROLLER
     apc = TaskContext.get 'aligned_position_controller'
     
-    #Orocos.conf.apply(apc,['default','aligned','position_simulation', 'all'])
-    
-    expected = apc.expected_inputs
-        expected.linear[0] = false
-        expected.linear[1] = false
-        expected.linear[2] = true
-
-        expected.angular[0] = true
-        expected.angular[1] = true
-        expected.angular[2] = true
-    apc.expected_inputs = expected
+    Orocos.conf.apply(apc,['default','position_simulation_parallel', 'no_xy'], true)
     
     imu.pose_samples.connect_to(apc.pose_samples)
     
@@ -211,7 +191,7 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
 ###########################ALIGNED_VELOCITY_CONTROLLER
     avc = TaskContext.get 'aligned_velocity_controller'
     
-    #Orocos.conf.apply(avc,['default', 'aligned', 'velocity_simulation', 'all'])
+    Orocos.conf.apply(avc,['default', 'velocity_simulation_parallel'])
     
     imu.pose_samples.connect_to(avc.pose_samples)
     
@@ -219,7 +199,7 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
 ###########################ALIGNED_TO_BODY
     aligned_to_body = TaskContext.get 'aligned_to_body'
     
-    #Orocos.conf.apply(aligned_to_body,['default'])
+    Orocos.conf.apply(aligned_to_body,['default'])
 
     imu.pose_samples.connect_to(aligned_to_body.orientation_samples)
     
@@ -229,9 +209,10 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
 ###########################ACCELERATION_CONTROLLER
     acceleration_controller = TaskContext.get 'acceleration_controller'
     
-    #Orocos.conf.apply(acceleration_controller,['default_simulation'])
+    Orocos.conf.apply(acceleration_controller,['default_simulation'])
     
     acceleration_controller.configure
+=begin
 ###########################MOTION_CONTROL
     motion_control = TaskContext.get 'motion_control'
 
@@ -256,27 +237,27 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
 
 
     fake_writer.configure
-
+=end
 
 ###########################CONNECTIONS
 
 
-    #acceleration_controller.cmd_out.connect_to(actuators.command) 
-    #aligned_to_body.cmd_out.connect_to(acceleration_controller.cmd_cascade)
-    #avc.cmd_out.connect_to(aligned_to_body.cmd_cascade)
-    #wall_follower.aligned_velocity_command.connect_to(avc.cmd_in)
-    #apc.cmd_out.connect_to(avc.cmd_cascade)
-    #world_to_aligned.cmd_out.connect_to(apc.cmd_cascade)
-    #wall_follower.world_command.connect_to(world_to_aligned.cmd_in)
+    acceleration_controller.cmd_out.connect_to(actuators.command) 
+    aligned_to_body.cmd_out.connect_to(acceleration_controller.cmd_cascade)
+    avc.cmd_out.connect_to(aligned_to_body.cmd_cascade)
+    wall_follower.aligned_velocity_command.connect_to(avc.cmd_in)
+    apc.cmd_out.connect_to(avc.cmd_cascade)
+    world_to_aligned.cmd_out.connect_to(apc.cmd_cascade)
+    wall_follower.world_command.connect_to(world_to_aligned.cmd_in)
    
     #wall_follower.motion_command.connect_to(motion_control.motion_commands)
    
-    fake_writer.position_command.connect_to(position_control.position_commands)
+    #fake_writer.position_command.connect_to(position_control.position_commands)
     
-    position_control.motion_commands.connect_to(motion_control.motion_commands)
+    #position_control.motion_commands.connect_to(motion_control.motion_commands)
     
     
-    motion_control.joint_commands.connect_to(actuators.command) 
+    #motion_control.joint_commands.connect_to(actuators.command) 
     
     puts "sleep  1"
     sleep 1
@@ -285,9 +266,9 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
     avc.start
     aligned_to_body.start
     acceleration_controller.start
-    fake_writer.start
-    position_control.start
-    motion_control.start
+    #fake_writer.start
+    #position_control.start
+    #motion_control.start
     
     
     loop do
