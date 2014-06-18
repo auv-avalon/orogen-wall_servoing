@@ -7,7 +7,7 @@ Orocos.initialize
 #view3d = Vizkit.vizkit3d_widget
 #view3d.show()
 
-Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_feature_estimator" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
+Orocos.run "AvalonSimulation" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
     
     Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_PROJECT_BASE'],"bundles", "avalon", "config", "orogen")) 
     simulation = TaskContext.get 'avalon_simulation'
@@ -124,7 +124,7 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
     # wall estimation settings
     servoing_wall_detector.opening_angle = 0.2 * Math::PI
     servoing_wall_detector.fading_out_factor = 0.04
-    servoing_wall_detector.wall_direction =  -0.5 * Math::PI
+    servoing_wall_detector.wall_direction =  0.3 * Math::PI
     servoing_wall_detector.use_motion_model = false
     servoing_wall_detector.wall_estimation_timeout = 10
     
@@ -140,7 +140,7 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
     # wall estimation settings
     obstacle_wall_detector.opening_angle = 0.1 * Math::PI
     obstacle_wall_detector.fading_out_factor = 0.04
-    obstacle_wall_detector.wall_direction =  0.99 * Math::PI
+    obstacle_wall_detector.wall_direction =  -0.2 * Math::PI
     obstacle_wall_detector.use_motion_model = false
     obstacle_wall_detector.wall_estimation_timeout = 10
     obstacle_wall_detector.offset = -0.6
@@ -155,14 +155,14 @@ Orocos.run "wall_servoing_test", "sonar_feature_estimator::Task" => "sonar_featu
     
     # New Wall Servoing
     wall_follower = Orocos::TaskContext.get "wall_servoing_new"
-    wall_follower.servoing_direction = 0.99 * Math::PI
+    wall_follower.servoing_direction = 0.2 * Math::PI
     wall_follower.servoing_depth = -2.0
-    wall_follower.servoing_speed = 0.5
+    wall_follower.servoing_speed = 0.20
     wall_follower.servoing_factor = 0.1
-    wall_follower.servoing_distance = 3.0
-    wall_follower.correction_speed = 0.3
-    wall_follower.correction_factor = 0.1
-    wall_follower.search_direction = 0.9 * Math::PI
+    wall_follower.servoing_distance = 2.0
+    wall_follower.correction_speed = 0.2
+    wall_follower.correction_factor = 0.3
+    wall_follower.search_direction = 0.0 * Math::PI
     wall_follower.direction_clockwise = true
 
     servoing_wall_detector.connect_to(wall_follower.servoing_wall)
