@@ -11,7 +11,7 @@ Orocos.run 'AvalonSimulation', 'wall_servoing_test', 'sonar_feature_estimator_te
     simulation.debug_sonar = 1
     simulation.enable_gui = true
     simulation.use_osg_ocean = false
-    simulation.scenefile = "#{ENV['AUTOPROJ_PROJECT_BASE']}/simulation/orogen/avalon_simulation/configuration/demo.scn"
+    simulation.scenefile = "#{ENV['AUTOPROJ_CURRENT_ROOT']}/simulation/orogen/avalon_simulation/configuration/demo.scn"
     simulation.configure
     simulation.start
 

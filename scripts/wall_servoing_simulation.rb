@@ -9,7 +9,7 @@ Orocos.initialize
 
 Orocos.run "AvalonSimulation" ,:wait => 100, :valgrind => false, :valgrind_options => ['--undef-value-errors=no'] do 
     
-    Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_PROJECT_BASE'],"bundles", "avalon", "config", "orogen")) 
+    Orocos.conf.load_dir(File.join(ENV['AUTOPROJ_CURRENT_ROOT'],"bundles", "avalon", "config", "orogen")) 
     simulation = TaskContext.get 'avalon_simulation'
     
 #      white_light = TaskContext.get 'white_light'
