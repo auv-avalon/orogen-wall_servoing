@@ -79,7 +79,7 @@ void WallServoing::updateHook()
             correction_speed = 0;
 
             double offset_to_search_angle = fabs(base::Angle::normalizeRad(base::getYaw(orientation_sample.orientation) -_search_direction.get() - direction_offset));
-            std::cout << "OFFSET_TO_SEARCH: " << offset_to_search_angle << std::endl;
+            //std::cout << "OFFSET_TO_SEARCH: " << offset_to_search_angle << std::endl;
 
             if(offset_to_search_angle < 0.02){
                 obstacle_detections = 0;
