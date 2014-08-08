@@ -172,11 +172,13 @@ void WallServoing::updateHook()
     }
 
     base::LinearAngular6DCommand world_cmd;
+    world_cmd.time = base::Time::now();
     world_cmd.z() = _servoing_depth;
     world_cmd.roll() = 0;
     world_cmd.pitch() = 0;
     world_cmd.yaw() = base::Angle::normalizeRad(direction + direction_offset); 
     base::LinearAngular6DCommand aligned_velocity_cmd;
+    aligned_velocity_cmd.time = base::Time::now();
     aligned_velocity_cmd.x() = (cos(_servoing_direction.get())*servoing_speed) + (sin(_servoing_direction.get())*correction_speed); 
     aligned_velocity_cmd.y() = -(sin(_servoing_direction.get())*servoing_speed) + (cos(_servoing_direction.get())*correction_speed); 
     //aligned_velocity_cmd.y() = (cos(_servoing_direction.get())*correction_speed); 
