@@ -99,9 +99,11 @@ void WallDetector::updateHook()
                 detected_distance = sonar_detectors::length(wall.first);
                 detected_orientation = atan2(wall.second.y(), wall.second.x());
                 detected_position = current_position;
-                last_wall_estimation = base::Time::now();
-                if(state() != WALL_FOUND){
-                    state(WALL_FOUND);
+                if(detected_distance <= 0){
+                    last_wall_estimation = base::Time::now();
+                    if(state() != WALL_FOUND){
+                        state(WALL_FOUND);
+                    }
                 }
                 base::samples::Pointcloud point_cloud;
                 point_cloud.points = centerWallEstimation->getPointCloud();
