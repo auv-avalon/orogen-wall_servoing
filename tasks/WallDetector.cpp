@@ -116,7 +116,7 @@ void WallDetector::updateHook()
     sonar_detectors::Wall wall_out;
     wall_out.last_detection = (base::Time::now()-last_wall_estimation).toSeconds(); 
 
-    if(wall_out.last_detection>_wall_estimation_timeout.get()){
+    if(wall_out.last_detection>_wall_estimation_timeout.get() || detected_distance <= 0){
         detected_distance = base::unset<double>();
         detected_orientation = base::unset<double>();
         if(state() != WALL_SEARCHING){
