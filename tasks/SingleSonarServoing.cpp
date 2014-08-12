@@ -219,7 +219,7 @@ void SingleSonarServoing::updateHook()
             alignedPositionCommand.linear(1) = 0.0;
             worldCommand.linear(2) = _fixed_depth.get();
             worldCommand.angular(1) = 0.0;
-            alignedPositionCommand.angular(2) = (alignment_heading - base::Angle::fromRad(current_orientation.getYaw())).getRad();
+            worldCommand.angular(2) = (alignment_heading).getRad();
 
             // write aligned position command
             if (_aligned_velocity_command.connected())
@@ -494,7 +494,7 @@ void SingleSonarServoing::updateHook()
     alignedPositionCommand.linear(1) = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
     worldCommand.linear(2) = _fixed_depth.get();
     worldCommand.angular(1) = 0.0;
-    alignedPositionCommand.angular(2) = relative_target_heading.getRad();
+    worldCommand.angular(2) = base::Angle::normalizeRad(base::getYaw(current_orientation.orientation) + relative_target_heading.getRad());
  
     // print detected corner msg for 2 seconds
     if(detected_corner_msg)
