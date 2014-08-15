@@ -138,10 +138,8 @@ task_context "SingleSonarServoing" do
 
     output_port('position_command', '/base/AUVPositionCommand').
         doc("relativ target position and heading")
-    output_port('aligned_velocity_command', 'base::LinearAngular6DCommand').
-	doc("relativ x-speed for new control draft")
     output_port('aligned_position_command', 'base::LinearAngular6DCommand').
-	doc("relativ target y-position for new control draft")
+	doc("relativ target x- and y- position for new control draft")
     output_port('world_command', 'base::LinearAngular6DCommand').
 	doc("absolute depth, roll, pitch, and yaw for new control draft")	
 

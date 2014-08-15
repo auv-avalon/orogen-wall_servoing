@@ -213,9 +213,8 @@ void SingleSonarServoing::updateHook()
            
             //create commnd for aligned 
             base::LinearAngular6DCommand alignedPositionCommand;
-            base::LinearAngular6DCommand alignedVelocityCommand;
 	    base::LinearAngular6DCommand worldCommand;
-            alignedVelocityCommand.linear(0) = 0.0;
+            alignedPositionCommand.linear(0) = 0.0;
             alignedPositionCommand.linear(1) = 0.0;
             worldCommand.linear(2) = _fixed_depth.get();
             worldCommand.angular(0) = 0.0; 
@@ -223,8 +222,6 @@ void SingleSonarServoing::updateHook()
             worldCommand.angular(2) = (alignment_heading).getRad();
 
             // write aligned position command
-            if (_aligned_velocity_command.connected())
-                _aligned_velocity_command.write(alignedVelocityCommand);
             
             if (_aligned_position_command.connected())
                 _aligned_position_command.write(alignedPositionCommand);
@@ -489,9 +486,8 @@ void SingleSonarServoing::updateHook()
     
     //create commnd for aligned 
     base::LinearAngular6DCommand alignedPositionCommand;
-    base::LinearAngular6DCommand alignedVelocityCommand;
     base::LinearAngular6DCommand worldCommand;
-    alignedVelocityCommand.linear(0) = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
+    alignedPositionCommand.linear(0) = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
     alignedPositionCommand.linear(1) = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
     worldCommand.linear(2) = _fixed_depth.get();
     worldCommand.angular(0) = 0.0;
@@ -537,11 +533,6 @@ void SingleSonarServoing::updateHook()
         _position_command.write(positionCommand);
     
     // write aligned position command
-    if (_aligned_velocity_command.connected()){
-        alignedVelocityCommand.time = base::Time::now();
-        _aligned_velocity_command.write(alignedVelocityCommand);
-    }
-    
     if (_aligned_position_command.connected()){
         alignedPositionCommand.time = base::Time::now();
         _aligned_position_command.write(alignedPositionCommand);
