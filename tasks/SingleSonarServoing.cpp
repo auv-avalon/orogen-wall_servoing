@@ -539,7 +539,6 @@ void SingleSonarServoing::updateHook()
     // write aligned position command
     if (_aligned_velocity_command.connected()){
         alignedVelocityCommand.time = base::Time::now();
-        alignedVelocityCommand.angular(0) = 0;
         _aligned_velocity_command.write(alignedVelocityCommand);
     }
     
