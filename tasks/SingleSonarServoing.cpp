@@ -218,6 +218,7 @@ void SingleSonarServoing::updateHook()
             alignedVelocityCommand.linear(0) = 0.0;
             alignedPositionCommand.linear(1) = 0.0;
             worldCommand.linear(2) = _fixed_depth.get();
+            worldCommand.angular(0) = 0.0; 
             worldCommand.angular(1) = 0.0;
             worldCommand.angular(2) = (alignment_heading).getRad();
 
@@ -493,6 +494,7 @@ void SingleSonarServoing::updateHook()
     alignedVelocityCommand.linear(0) = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
     alignedPositionCommand.linear(1) = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
     worldCommand.linear(2) = _fixed_depth.get();
+    worldCommand.angular(0) = 0.0;
     worldCommand.angular(1) = 0.0;
     worldCommand.angular(2) = base::Angle::normalizeRad(base::getYaw(current_orientation.orientation) + relative_target_heading.getRad());
  
