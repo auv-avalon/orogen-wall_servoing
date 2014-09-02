@@ -559,6 +559,16 @@ void SingleSonarServoing::updateHook()
         
         _wall_servoing_debug.write(debugData);
     }
+
+    //write detected wall data
+    sonar_detectors::Wall wall_out;
+    wall_out.time = base::Time::now();
+    wall_out.wall_distance = distance_to_wall;
+    wall_out.wall_angle = current_wall_angle.getRad();
+    wall_out.last_detection = base::unset<double>();
+
+    _wall.write(wall_out);
+    
 }
 
 void SingleSonarServoing::errorHook()
