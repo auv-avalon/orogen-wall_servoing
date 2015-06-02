@@ -5,6 +5,8 @@
 #include <SonarDetectorTaskTypes.hpp>
 #include <sonar_detectors/SonarDetectorMath.hpp>
 #include <base/samples/pointcloud.h>
+#include <base/commands/AUVMotion.hpp>
+#include <base/commands/AUVPosition.hpp>
 
 using namespace wall_servoing;
 
@@ -201,7 +203,7 @@ void SingleSonarServoing::updateHook()
             if(alignment_heading.rad > M_PI)
                 alignment_heading = base::Angle::fromRad(current_orientation.getYaw());
             
-            base::AUVPositionCommand positionCommand;
+            base::commands::AUVPosition positionCommand;
             positionCommand.x = 0.0;
             positionCommand.y = 0.0;
             positionCommand.z = _fixed_depth.get();
@@ -478,7 +480,7 @@ void SingleSonarServoing::updateHook()
         relative_target_position = Eigen::AngleAxisd(_initial_wall_direction.get(), Eigen::Vector3d::UnitZ()) * relative_target_position;
     
      // create relative position command
-    base::AUVPositionCommand positionCommand;
+    base::commands::AUVPosition positionCommand;
     positionCommand.x = std::abs(relative_target_position.x()) < 0.001 ? 0.0 : relative_target_position.x();
     positionCommand.y = std::abs(relative_target_position.y()) < 0.001 ? 0.0 : relative_target_position.y();
     positionCommand.z = _fixed_depth.get();

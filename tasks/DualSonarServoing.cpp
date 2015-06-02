@@ -2,6 +2,7 @@
 
 #include "DualSonarServoing.hpp"
 #include "SonarDetectorTaskTypes.hpp"
+#include <base/commands/AUVPosition.hpp>
 
 using namespace wall_servoing;
 
@@ -202,7 +203,7 @@ void DualSonarServoing::updateHook()
         }
     }
     
-    base::AUVPositionCommand positionCommand;
+    base::commands::AUVPosition positionCommand;
     positionCommand.z = _fixed_depth.get();
     positionCommand.x = 0.0;
     positionCommand.y = 0.0;

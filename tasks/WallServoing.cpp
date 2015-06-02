@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "WallServoing.hpp"
+#include <base/commands/AUVMotion.hpp>
 
 using namespace wall_servoing;
 
@@ -188,7 +189,7 @@ void WallServoing::updateHook()
 
     //For the od controlchain
 
-    base::AUVMotionCommand motion_command;
+    base::commands::AUVMotion motion_command;
     motion_command.x_speed = aligned_velocity_cmd.x();
     motion_command.y_speed = aligned_velocity_cmd.y();
     motion_command.z = world_cmd.z();
